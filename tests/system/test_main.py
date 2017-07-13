@@ -1,8 +1,7 @@
 import unittest
-import io
-import tarfile
 
 from artifacts.main import artifact_flask as af
+from tests.util.stream.archive_stream import streamed_archive
 
 
 af.testing = True
@@ -13,14 +12,7 @@ class ArtifactFlaskTestCase(unittest.TestCase):
     def setUp(self):
         self.af = af.test_client()
 
-        self.outputStream = io.BytesIO()
-        tar = tarfile.open(fileobj=self.outputStream, mode='w:gz')
-        inputStream = io.BytesIO(b'toto')
-        tarinfo = tarfile.TarInfo(name="README")
-        tarinfo.size = len(inputStream.getbuffer())
-        tar.addfile(tarinfo, inputStream)
-        tar.close()
-        self.outputStream.seek(0)
+        self.outputStream = streamed_archive(b'toto')
 
     def tearDown(self):
         pass

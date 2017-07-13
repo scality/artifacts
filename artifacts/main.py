@@ -1,4 +1,4 @@
-from providers import CloudFiles
+from artifacts.providers import CloudFiles
 
 from flask import Flask, request
 artifact_flask = Flask(__name__)
@@ -14,7 +14,7 @@ def upload_archive(container_name):
 
     provider.upload_archive(request.stream, container_name)
 
-    return request.stream.read()
+    return 'archive saved'
 
 
 @artifact_flask.route("/getfile/<path:filepath>", methods=['GET'])

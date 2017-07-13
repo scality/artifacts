@@ -1,6 +1,7 @@
 import unittest
 import os
 
+from tests.util.stream.archive_stream import streamed_archive
 from artifacts.providers import CloudFiles
 
 os.environ['RAX_LOGIN'] = 'release.engineering'
@@ -17,3 +18,9 @@ class CloudFilesTestCase(unittest.TestCase):
         token = cf.authenticate()
 
         self.assertEqual(len(token), 142)
+
+    def test_upload_archive(self):
+        code = cf.upload_archive(streamed_archive(b'toto'), 'test_container')
+        self.assertEqual(code, 200)
+
+    #   def test_get

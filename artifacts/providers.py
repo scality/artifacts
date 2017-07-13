@@ -56,7 +56,7 @@ class CloudFiles(AbstractProvider):
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.status_code
 
     def getfile(self, container, filepath):
 
