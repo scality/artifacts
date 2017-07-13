@@ -12,7 +12,7 @@ class ArtifactFlaskTestCase(unittest.TestCase):
     def setUp(self):
         self.af = af.test_client()
 
-        self.outputStream = streamed_archive(b'toto')
+        self.outputStream = streamed_archive(b'toto', 'test_file')
 
     def tearDown(self):
         pass
@@ -26,7 +26,7 @@ class ArtifactFlaskTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, b'archive saved')
 
-        response = self.af.get('/getfile/mycontainer/README')
+        response = self.af.get('/getfile/mycontainer/test_file')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, b'toto')

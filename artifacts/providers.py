@@ -2,6 +2,9 @@ import tarfile
 import requests
 import os
 
+os.environ['RAX_LOGIN'] = 'release.engineering'
+os.environ['RAX_PWD'] = 'Ap3u6iLKD9OU'
+
 
 class AbstractProvider():
 
@@ -51,22 +54,22 @@ class CloudFiles(AbstractProvider):
         #             a.write(chunk)
 
         auth_token = self.authenticate()
-        resp = requests.put(self.url,
-                            files={container: fileobj},
+        resp = requests.put('{}/{}'.format(self.url, container),
+                            data=fileobj,
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
 
         return resp.status_code
 
-    def getfile(self, container, filepath):
+    def getfile(self, filepath, container):
 
         auth_token = self.authenticate()
 
-        resp = requests.get(self.url,
+        resp = requests.get('{}/{}/{}'.format(self.url, container, filepath),
                             params={'format': 'json'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.content
 
     def authenticate(self):
         data = {'auth':

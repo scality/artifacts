@@ -9,20 +9,20 @@ tenant_id = 'MossoCloudFS_984990'
 provider = CloudFiles(api_endpoint, tenant_id)
 
 
-@artifact_flask.route("/upload_archive/<container_name>", methods=['PUT'])
-def upload_archive(container_name):
+@artifact_flask.route("/upload_archive/<container>", methods=['PUT'])
+def upload_archive(container):
 
-    provider.upload_archive(request.stream, container_name)
+    provider.upload_archive(request.stream, container)
 
     return 'archive saved'
 
 
-@artifact_flask.route("/getfile/<path:filepath>", methods=['GET'])
-def getfile(filepath):
+@artifact_flask.route("/getfile/<container>/<path:filepath>", methods=['GET'])
+def getfile(filepath, container):
 
-    f = provider.getfile(filepath)
+    f = provider.getfile(filepath, container)
 
-    return f.read()
+    return f
 
 
 if __name__ == "__main__":
