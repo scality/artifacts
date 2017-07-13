@@ -17,12 +17,12 @@ class AbstractProvider():
 
 class Local(AbstractProvider):
 
-    def upload_archive(self, fileobj, filepath):
+    def upload_archive(self, fileobj, container):
         with tarfile.open(fileobj=fileobj, mode='r:gz') as a:
-            a.extractall('/tmp/artifacts/' + filepath)
+            a.extractall('/tmp/artifact/{}/'.format(container))
 
-    def getfile(self, filepath):
-        with open('/tmp/artifacts/' + filepath, 'r') as f:
+    def getfile(self, filepath, container):
+        with open('/tmp/artifact/{}/{}'.format(container, filepath), 'r') as f:
             print(filepath)
             return f.read()
 
@@ -46,12 +46,6 @@ class CloudFiles(AbstractProvider):
         self.url = '{}/v1/{}'.format(api_endpoint, tenant_id)
 
     def upload_archive(self, fileobj, container):
-        #     chunk_size = 1024 ** 2
-        #     with open('artifacts.tar.gz', 'wb') as a:
-        #         chunk = 1
-        #         while len(chunk) > 0:
-        #             chunk = fileobj.read(chunk_size)
-        #             a.write(chunk)
 
         auth_token = self.authenticate()
         resp = requests.put('{}/{}'.format(self.url, container),
