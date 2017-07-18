@@ -43,14 +43,13 @@ class S3(AbstractProvider):
 class CloudFiles(AbstractProvider):
 
     def __init__(self, api_endpoint, tenant_id, auth_url):
-        self.post_url = '{}/{}'.format(api_endpoint, tenant_id)
-        self.get_url = api_endpoint
+        self.url = '{}/{}'.format(api_endpoint, tenant_id)
         self.auth_url = auth_url
 
     def upload_archive(self, fileobj, container):
 
         auth_token = self.authenticate()
-        resp = requests.put('{}/{}'.format(self.post_url, container),
+        resp = requests.put('{}/{}'.format(self.url, container),
                             data=fileobj,
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
@@ -61,8 +60,9 @@ class CloudFiles(AbstractProvider):
 
         auth_token = self.authenticate()
 
-        resp = requests.get('{}/{}/{}'.format(self.get_url, container, filepath),
-                            params={'format': 'json'},
+        resp = requests.get('{}/{}/{}'.format(self.url,
+                                              container,
+                                              filepath),
                             headers={'X-Auth-Token': auth_token})
 
         return resp
