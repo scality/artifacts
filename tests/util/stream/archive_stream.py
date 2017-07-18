@@ -6,15 +6,11 @@ import io
 def streamed_archive(test_string, filename):
 
     outputStream = io.BytesIO()
-    tar = tarfile.open(fileobj=outputStream, mode='w:gz')
-
-    inputStream = io.BytesIO(test_string)
-
-    tarinfo = tarfile.TarInfo(name=filename)
-    tarinfo.size = len(inputStream.getbuffer())
-
-    tar.addfile(tarinfo, inputStream)
-    tar.close()
+    with tarfile.open(fileobj=outputStream, mode='w:gz') as tar:
+        inputStream = io.BytesIO(test_string)
+        tarinfo = tarfile.TarInfo(name=filename)
+        tarinfo.size = len(inputStream.getbuffer())
+        tar.addfile(tarinfo, inputStream)
 
     outputStream.seek(0)
 

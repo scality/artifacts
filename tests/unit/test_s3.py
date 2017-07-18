@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import unittest
 import os
 import shutil
@@ -8,7 +6,7 @@ import tarfile
 
 from artifacts.providers import S3
 from artifacts.main import untar_return_name, s3sync
-from daemon import Daemon
+from tests.util.daemon import Daemon
 
 s3 = S3()
 
@@ -16,7 +14,6 @@ s3 = S3()
 class S3MockServer(Daemon):
     '''Start a daemonized s3 mock server'''
 
-    # needs pip install moto[server] to work
     _start_cmd = ['moto_server', 's3']
 
 
@@ -50,6 +47,11 @@ class S3SyncTestCase(unittest.TestCase):
         self.mock_server = S3MockServer('s3mock')
         self.mock_server.start()
 
+    # stop a s3 mock server
+    @classmethod
+    def tearDownClass(self):
+        self.mock_server.stop()
+
     def setUp(self):
 
         # create testDir/testFile
@@ -64,6 +66,9 @@ class S3SyncTestCase(unittest.TestCase):
                                  's3://testBucket',
                                  '--endpoint-url=http://localhost:5000'])
 
+    def tearDown(self):
+        shutil.rmtree('testDir')
+
     def test_s3sync(self):
         s3sync('testDir', 'testBucket', 'http://localhost:5000')
         output = subprocess.check_output(['aws',
@@ -74,15 +79,3 @@ class S3SyncTestCase(unittest.TestCase):
 
         # output is in the form b'<date> <time> <filesize in bytes> <filename>/n'
         self.assertEqual(output[-9:-1], b'testFile')
-
-    def tearDown(self):
-        shutil.rmtree('testDir')
-
-    # stop a s3 mock server
-    @classmethod
-    def tearDownClass(self):
-        self.mock_server.stop()
-
-
-if __name__ == '__main__':
-    unittest.main()

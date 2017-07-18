@@ -4,9 +4,10 @@ from flask import Flask, request
 artifact_flask = Flask(__name__)
 
 
-api_endpoint = 'https://storage101.dfw1.clouddrive.com'
+api_endpoint = 'https://storage101.dfw1.clouddrive.com/v1'
 tenant_id = 'MossoCloudFS_984990'
-provider = CloudFiles(api_endpoint, tenant_id)
+auth_url = 'https://https://identity.api.rackspacecloud.com/v2.0/tokens'
+provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
 @artifact_flask.route("/upload_archive/<container>", methods=['PUT'])

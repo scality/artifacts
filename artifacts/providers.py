@@ -42,40 +42,42 @@ class S3(AbstractProvider):
 
 class CloudFiles(AbstractProvider):
 
-    def __init__(self, api_endpoint, tenant_id):
-        self.url = '{}/v1/{}'.format(api_endpoint, tenant_id)
+    def __init__(self, api_endpoint, tenant_id, auth_url):
+        self.post_url = '{}/{}'.format(api_endpoint, tenant_id)
+        self.get_url = api_endpoint
+        self.auth_url = auth_url
 
     def upload_archive(self, fileobj, container):
 
         auth_token = self.authenticate()
-        resp = requests.put('{}/{}'.format(self.url, container),
+        resp = requests.put('{}/{}'.format(self.post_url, container),
                             data=fileobj,
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp.status_code
+        return resp
 
     def getfile(self, filepath, container):
 
         auth_token = self.authenticate()
 
-        resp = requests.get('{}/{}/{}'.format(self.url, container, filepath),
+        resp = requests.get('{}/{}/{}'.format(self.get_url, container, filepath),
                             params={'format': 'json'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp.content
+        return resp
 
     def authenticate(self):
         data = {'auth':
                 {'passwordCredentials':
-                    {'username': os.getenv('RAX_LOGIN'),
-                     'password': os.getenv('RAX_PWD')
-                     }
+                    {
+                        'username': os.getenv('RAX_LOGIN'),
+                        'password': os.getenv('RAX_PWD')
+                    }
                  }
                 }
 
-        auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
-        response = requests.post(auth_url,
+        response = requests.post(self.auth_url,
                                  json=data,
                                  headers={'Content-type': 'application/json'})
 

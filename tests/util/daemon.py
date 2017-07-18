@@ -26,7 +26,7 @@ from os import environ
 from os.path import join
 from subprocess import Popen
 
-from cmd import cmd
+from .cmd import cmd
 
 
 class Daemon(object):
