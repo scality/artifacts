@@ -13,17 +13,33 @@ provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 @app.route("/upload/<container>", methods=['PUT'])
 def upload_archive(container):
 
-    resp = provider.upload_archive(request.stream, container)
+    resp = provider.upload_archive(container, request.stream)
 
-    return resp.content
+    return resp
 
 
 @app.route("/getfile/<container>/<path:filepath>", methods=['GET'])
-def getfile(filepath, container):
+def getfile(container, filepath):
 
-    f = provider.getfile(filepath, container)
+    resp = provider.getfile(container, filepath)
 
-    return f.content
+    return resp
+
+
+@app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
+def delete_object(container, filepath):
+
+    resp = provider.delete_object(container, filepath)
+
+    return resp
+
+
+@app.route("/delete_container/<container>", methods=['DELETE'])
+def delete_container(container):
+
+    resp = provider.delete_container(container)
+
+    return resp
 
 
 if __name__ == "__main__":

@@ -6,16 +6,7 @@ os.environ['RAX_LOGIN'] = 'release.engineering'
 os.environ['RAX_PWD'] = 'Ap3u6iLKD9OU'
 
 
-class AbstractProvider():
-
-    def upload_archive(self):
-        pass
-
-    def getfile(self):
-        pass
-
-
-class Local(AbstractProvider):
+class Local():
 
     def upload_archive(self, fileobj, container):
         with tarfile.open(fileobj=fileobj, mode='r:gz') as a:
@@ -27,7 +18,7 @@ class Local(AbstractProvider):
             return f.read()
 
 
-class S3(AbstractProvider):
+class S3():
 
     def upload_archive(self, fileobj, url):
         pass
@@ -40,13 +31,13 @@ class S3(AbstractProvider):
             a.extractall(dirname)
 
 
-class CloudFiles(AbstractProvider):
+class CloudFiles():
 
     def __init__(self, api_endpoint, tenant_id, auth_url):
         self.url = '{}/{}'.format(api_endpoint, tenant_id)
         self.auth_url = auth_url
 
-    def upload_archive(self, fileobj, container):
+    def upload_archive(self, container, fileobj):
 
         auth_token = self.authenticate()
         resp = requests.put('{}/{}'.format(self.url, container),
@@ -54,9 +45,9 @@ class CloudFiles(AbstractProvider):
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.content
 
-    def getfile(self, filepath, container):
+    def getfile(self, container, filepath):
 
         auth_token = self.authenticate()
 
@@ -65,7 +56,27 @@ class CloudFiles(AbstractProvider):
                                               filepath),
                             headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.content
+
+    def delete_object(self, container, filepath):
+
+        auth_token = self.authenticate()
+
+        resp = requests.delete('{}/{}/{}'.format(self.url,
+                                                 container,
+                                                 filepath),
+                               headers={'X-Auth-Token': auth_token})
+
+        return resp.content
+
+    def delete_container(self, container):
+
+        auth_token = self.authenticate()
+
+        resp = requests.delete('{}/{}'.format(self.url, container),
+                               headers={'X-Auth-Token': auth_token})
+
+        return resp.content
 
     def authenticate(self):
         data = {'auth':
