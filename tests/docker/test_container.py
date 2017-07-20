@@ -9,7 +9,8 @@ class DockerTestCase(unittest.TestCase):
         self.client = docker.from_env()
 
     def tearDown(self):
-        self.client.containers.get('cloudfiles').remove(force=True)
+        for container in self.client.containers.list(all=True):
+            container.remove(force=True)
 
         self.client.images.remove(image="artifacts")
 
