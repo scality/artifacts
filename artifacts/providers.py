@@ -2,9 +2,6 @@ import tarfile
 import requests
 import os
 
-os.environ['RAX_LOGIN'] = 'release.engineering'
-os.environ['RAX_PWD'] = 'Ap3u6iLKD9OU'
-
 
 class Local():
 

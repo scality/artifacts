@@ -1,4 +1,5 @@
 import unittest
+import os
 
 import docker
 
@@ -16,8 +17,7 @@ class DockerTestCase(unittest.TestCase):
 
     def test_container_build_and_run(self):
 
-        # TODO: change path for prod
-        pathToContainerDir = '/home/sweenu/Scality/artifacts'
+        pathToContainerDir = os.getcwd()
         artifacts_image = self.client.images.build(path=pathToContainerDir,
                                                    tag='artifacts')
 
