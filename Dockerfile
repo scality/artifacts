@@ -1,7 +1,8 @@
-FROM tiangolo/uwsgi-nginx-flask:flask-python3.5
+FROM tiangolo/uwsgi-nginx-flask:python3.6
 
 RUN pip install --upgrade pip
-RUN pip install awscli requests moto
+RUN pip install awscli requests
 
 COPY ./artifacts /app
-#COPY upload_1g.conf /etc/nginx/conf.d/
+
+ENV NGINX_MAX_UPLOAD 1g
