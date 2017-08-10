@@ -4,4 +4,4 @@ RUN pip install --upgrade pip
 RUN pip install awscli requests moto
 
 COPY ./artifacts /app
-COPY upload_1g.conf /etc/nginx/conf.d/
+#COPY upload_1g.conf /etc/nginx/conf.d/
