@@ -1,6 +1,7 @@
 import tarfile
 import requests
 import os
+import shutil
 
 
 class Local():
@@ -51,9 +52,10 @@ class CloudFiles():
         resp = requests.get('{}/{}/{}'.format(self.url,
                                               container,
                                               filepath),
-                            headers={'X-Auth-Token': auth_token})
-
-        return resp.content
+                            headers={'X-Auth-Token': auth_token},
+                            stream=True)
+        with open(filepath, 'wb') as f:
+            shutil.copyfileobj(resp.raw, f) # could get a third parameter for buffer size
 
     def delete_object(self, container, filepath):
 
