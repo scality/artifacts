@@ -1,6 +1,8 @@
+import io
+
 from providers import CloudFiles
 
-from flask import Flask, request
+from flask import Flask, request, send_file
 app = Flask(__name__)
 
 
@@ -15,7 +17,7 @@ def upload_archive(container):
 
     resp = provider.upload_archive(container, request.stream)
 
-    return resp
+    return resp.content
 
 
 @app.route("/getfile/<container>/<path:filepath>", methods=['GET'])
@@ -23,7 +25,8 @@ def getfile(container, filepath):
 
     resp = provider.getfile(container, filepath)
 
-    return resp
+    return send_file(io.BytesIO(resp.content),
+                     attachment_filename=filepath.split('/')[-1])
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
@@ -31,7 +34,7 @@ def delete_object(container, filepath):
 
     resp = provider.delete_object(container, filepath)
 
-    return resp
+    return resp.content
 
 
 @app.route("/delete_container/<container>", methods=['DELETE'])
@@ -39,7 +42,7 @@ def delete_container(container):
 
     resp = provider.delete_container(container)
 
-    return resp
+    return resp.content
 
 
 if __name__ == "__main__":

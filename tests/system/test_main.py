@@ -17,13 +17,15 @@ class ArtifactFlaskTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_POST(self):
+    def test_POST_and_GET(self):
 
+        # Upload test archive
         response = self.app.put('/upload/aTestContainer',
                                 data=self.outputStream)
 
         self.assertEqual(response.status_code, 200)
 
+        # Get test file content
         response = self.app.get('/getfile/aTestContainer/test_file')
 
         self.assertEqual(response.status_code, 200)

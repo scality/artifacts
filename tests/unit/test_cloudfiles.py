@@ -19,13 +19,10 @@ class CloudFilesTestCase(unittest.TestCase):
 
         self.assertEqual(len(token), 142)
 
-    def test_upload_archive(self):
-        response_content = cf.upload_archive('aTestContainer',
-                                             streamed_archive(b'toto',
-                                                              'test_file'))
+    def test_upload_archive_and_getfile(self):
+        response = cf.upload_archive('aTestContainer',
+                                     streamed_archive(b'toto', 'test_file'))
+        self.assertEqual(200, response.status_code)
 
-        self.assertIn(b"201", response_content)
-
-        filecontent = cf.getfile('aTestContainer', 'test_file')
-
-        self.assertEqual(filecontent, b'toto')
+        response = cf.getfile('aTestContainer', 'test_file')
+        self.assertEqual(response.content, b'toto')

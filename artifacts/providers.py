@@ -1,7 +1,6 @@
 import tarfile
 import requests
 import os
-import shutil
 
 
 class Local():
@@ -43,7 +42,7 @@ class CloudFiles():
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp.content
+        return resp
 
     def getfile(self, container, filepath):
 
@@ -54,8 +53,8 @@ class CloudFiles():
                                               filepath),
                             headers={'X-Auth-Token': auth_token},
                             stream=True)
-        with open(filepath, 'wb') as f:
-            shutil.copyfileobj(resp.raw, f) # could get a third parameter for buffer size
+
+        return resp
 
     def delete_object(self, container, filepath):
 
@@ -66,7 +65,7 @@ class CloudFiles():
                                                  filepath),
                                headers={'X-Auth-Token': auth_token})
 
-        return resp.content
+        return resp
 
     def delete_container(self, container):
 
@@ -75,7 +74,7 @@ class CloudFiles():
         resp = requests.delete('{}/{}'.format(self.url, container),
                                headers={'X-Auth-Token': auth_token})
 
-        return resp.content
+        return resp
 
     def authenticate(self):
         data = {'auth':
@@ -87,8 +86,8 @@ class CloudFiles():
                  }
                 }
 
-        response = requests.post(self.auth_url,
-                                 json=data,
-                                 headers={'Content-type': 'application/json'})
+        resp = requests.post(self.auth_url,
+                             json=data,
+                             headers={'Content-type': 'application/json'})
 
-        return response.json()['access']['token']['id']
+        return resp.json()['access']['token']['id']
