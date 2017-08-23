@@ -1,48 +1,50 @@
-import io
-
-from providers import CloudFiles
+from artifacts.providers.s3 import S3
 
 from flask import Flask, request, send_file
 app = Flask(__name__)
 
 
-api_endpoint = 'https://storage101.dfw1.clouddrive.com/v1'
-tenant_id = 'MossoCloudFS_984990'
-auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
-provider = CloudFiles(api_endpoint, tenant_id, auth_url)
+url = 'sreport.scality.com'
+provider = S3(url)
 
 
-@app.route("/upload/<container>", methods=['PUT'])
-def upload_archive(container):
+@app.route("/upload/<bucket>", methods=['PUT'])
+def upload_archive(bucket):
 
-    resp = provider.upload_archive(container, request.stream)
+    resp = provider.upload_archive(bucket, request.stream)
 
-    return resp.content
-
-
-@app.route("/getfile/<container>/<path:filepath>", methods=['GET'])
-def getfile(container, filepath):
-
-    resp = provider.getfile(container, filepath)
-
-    return send_file(io.BytesIO(resp.content),
-                     attachment_filename=filepath.split('/')[-1])
+    return resp
 
 
-@app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
-def delete_object(container, filepath):
+@app.route("/getfile/<bucket>/<path:filepath>", methods=['GET'])
+def getfile(bucket, filepath):
 
-    resp = provider.delete_object(container, filepath)
+    # resp is a fileobj
+    resp = provider.getfile(bucket, filepath)
 
-    return resp.content
+    return send_file(resp, attachment_filename=filepath.split('/')[-1])
 
 
-@app.route("/delete_container/<container>", methods=['DELETE'])
-def delete_container(container):
+@app.route("/builds", methods=['GET'])
+def list_buckets(bucket, filepath):
 
-    resp = provider.delete_container(container)
+    return 'lol'
 
-    return resp.content
+
+@app.route("/delete_object/<bucket>/<path:filepath>", methods=['DELETE'])
+def delete_object(bucket, filepath):
+
+    resp = provider.delete_object(bucket, filepath)
+
+    return resp
+
+
+@app.route("/delete_bucket/<bucket>", methods=['DELETE'])
+def delete_bucket(bucket):
+
+    resp = provider.delete_bucket(bucket)
+
+    return resp
 
 
 if __name__ == "__main__":

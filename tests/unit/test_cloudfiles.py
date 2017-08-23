@@ -21,7 +21,7 @@ class CloudFilesTestCase(unittest.TestCase):
 
     def test_upload_archive_and_getfile(self):
         response = cf.upload_archive('aTestContainer',
-                                     streamed_archive(b'toto', 'test_file'))
+                                     streamed_archive('test_file', b'toto'))
         self.assertEqual(200, response.status_code)
 
         response = cf.getfile('aTestContainer', 'test_file')

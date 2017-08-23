@@ -3,7 +3,7 @@ import io
 
 
 # test_string must be a b''
-def streamed_archive(test_string, filename):
+def streamed_archive(filename, test_string):
 
     outputStream = io.BytesIO()
     with tarfile.open(fileobj=outputStream, mode='w:gz') as tar:

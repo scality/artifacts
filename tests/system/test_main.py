@@ -12,7 +12,7 @@ class ArtifactFlaskTestCase(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
 
-        self.outputStream = streamed_archive(b'toto', 'test_file')
+        self.outputStream = streamed_archive('test_file', b'toto')
 
     def tearDown(self):
         pass

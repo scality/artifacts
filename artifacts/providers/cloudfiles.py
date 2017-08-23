@@ -1,23 +1,10 @@
-import tarfile
-import requests
+import io
 import os
 
-
-class S3():
-
-    def upload_archive(self, fileobj, url):
-        pass
-
-    def getfile(self):
-        pass
-
-    def extract(self, archive_path, dirname):
-        with tarfile.open(archive_path, 'r:gz') as a:
-            a.extractall(dirname)
+import requests
 
 
 class CloudFiles():
-
     def __init__(self, api_endpoint, tenant_id, auth_url):
         self.url = f'{api_endpoint}/{tenant_id}'
         self.auth_url = auth_url
@@ -30,7 +17,7 @@ class CloudFiles():
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.content
 
     def getfile(self, container, filepath):
 
@@ -40,7 +27,7 @@ class CloudFiles():
                             headers={'X-Auth-Token': auth_token},
                             stream=True)
 
-        return resp
+        return io.BytesIO(resp.content)
 
     def delete_object(self, container, filepath):
 
@@ -49,7 +36,7 @@ class CloudFiles():
         resp = requests.delete(f'{self.url}/{container}/{filepath}',
                                headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.content
 
     def delete_container(self, container):
 
@@ -58,7 +45,7 @@ class CloudFiles():
         resp = requests.delete(f'{self.url}/{container}',
                                headers={'X-Auth-Token': auth_token})
 
-        return resp
+        return resp.content
 
     def authenticate(self):
         data = {'auth':
