@@ -3,18 +3,6 @@ import requests
 import os
 
 
-class Local():
-
-    def upload_archive(self, fileobj, container):
-        with tarfile.open(fileobj=fileobj, mode='r:gz') as a:
-            a.extractall(f'/tmp/artifact/{container}/')
-
-    def getfile(self, filepath, container):
-        with open(f'/tmp/artifact/{container}/{filepath}', 'r') as f:
-            print(filepath)
-            return f.read()
-
-
 class S3():
 
     def upload_archive(self, fileobj, url):

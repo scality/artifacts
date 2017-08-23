@@ -26,7 +26,7 @@ class DockerTestCase(unittest.TestCase):
         self.assertIn(artifacts_image, image_list)
 
         self.client.containers.run("artifacts", name='cloudfiles',
-                                   detach=True, ports={80:80})
+                                   detach=True, ports={80:80}) # noqa
 
         cloudfiles_containter = self.client.containers.get("cloudfiles")
         container_list = self.client.containers.list()
