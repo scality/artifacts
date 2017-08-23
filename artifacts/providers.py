@@ -7,10 +7,10 @@ class Local():
 
     def upload_archive(self, fileobj, container):
         with tarfile.open(fileobj=fileobj, mode='r:gz') as a:
-            a.extractall('/tmp/artifact/{}/'.format(container))
+            a.extractall(f'/tmp/artifact/{container}/')
 
     def getfile(self, filepath, container):
-        with open('/tmp/artifact/{}/{}'.format(container, filepath), 'r') as f:
+        with open(f'/tmp/artifact/{container}/{filepath}', 'r') as f:
             print(filepath)
             return f.read()
 
@@ -31,13 +31,13 @@ class S3():
 class CloudFiles():
 
     def __init__(self, api_endpoint, tenant_id, auth_url):
-        self.url = '{}/{}'.format(api_endpoint, tenant_id)
+        self.url = f'{api_endpoint}/{tenant_id}'
         self.auth_url = auth_url
 
     def upload_archive(self, container, fileobj):
 
         auth_token = self.authenticate()
-        resp = requests.put('{}/{}'.format(self.url, container),
+        resp = requests.put(f'{self.url}/{container}',
                             data=fileobj,
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token})
@@ -48,9 +48,7 @@ class CloudFiles():
 
         auth_token = self.authenticate()
 
-        resp = requests.get('{}/{}/{}'.format(self.url,
-                                              container,
-                                              filepath),
+        resp = requests.get(f'{self.url}/{container}/{filepath}',
                             headers={'X-Auth-Token': auth_token},
                             stream=True)
 
@@ -60,9 +58,7 @@ class CloudFiles():
 
         auth_token = self.authenticate()
 
-        resp = requests.delete('{}/{}/{}'.format(self.url,
-                                                 container,
-                                                 filepath),
+        resp = requests.delete(f'{self.url}/{container}/{filepath}',
                                headers={'X-Auth-Token': auth_token})
 
         return resp
@@ -71,7 +67,7 @@ class CloudFiles():
 
         auth_token = self.authenticate()
 
-        resp = requests.delete('{}/{}'.format(self.url, container),
+        resp = requests.delete(f'{self.url}/{container}',
                                headers={'X-Auth-Token': auth_token})
 
         return resp
