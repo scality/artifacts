@@ -25,12 +25,6 @@ def getfile(bucket, filepath):
     return send_file(resp, attachment_filename=filepath.split('/')[-1])
 
 
-@app.route("/builds", methods=['GET'])
-def list_buckets(bucket, filepath):
-
-    return 'lol'
-
-
 @app.route("/delete_object/<bucket>/<path:filepath>", methods=['DELETE'])
 def delete_object(bucket, filepath):
 

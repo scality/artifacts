@@ -1,16 +1,17 @@
 import unittest
 
-from artifacts.main import app
+from artifacts import main
+from artifacts.providers.s3 import S3
 from tests.util.stream.archive_stream import streamed_archive
 
-
-app.testing = True
+main.app.testing = True
+main.provider = S3()
 
 
 class ArtifactFlaskTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.app = app.test_client()
+        self.app = main.app.test_client()
 
         self.outputStream = streamed_archive('test_file', b'toto')
 

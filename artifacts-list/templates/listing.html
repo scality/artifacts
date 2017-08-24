@@ -1,0 +1,107 @@
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <style>
+        .icon-success {
+            color: #5CB85C;
+        }
+
+        .icon-failure {
+            color: #D9534F;
+        }
+    </style>
+    <script>
+        function display_directory_navigation() {
+            var dirs = window.location.pathname.split('/')
+            var cdir = ""
+            var i
+            for (i = 1; i < dirs.length - 2; i++) {
+                cdir += "<b><a href=\\" / " + dirs.slice(1,i+1).join('/')  + " / \\">" + dirs[i] + "</a></b> / "
+            }
+            cdir += dirs[dirs.length - 2]
+            document.getElementById("div_navigation").innerHTML = cdir;
+        }
+
+        function wait_build_status() {
+            document.getElementById("div_status").innerHTML = "<span class=\\"
+            glyphicon glyphicon - minus\\ "></span>&nbsp;"
+        }
+
+        function display_build_status() {
+            var container = window.location.pathname.match(/^\/builds\/([^\/]+)\//)[1]
+            var file = new XMLHttpRequest();
+            file.onreadystatechange = function() {
+                if (file.readyState == 4) {
+                    if (file.status == 200) {
+                        var dynamic_content = ""
+                        var iconColor = ""
+                        var iconShape = " glyphicon-remove"
+                        if (file.responseText == "SUCCESSFUL") {
+                            iconColor = " icon-success"
+                            iconShape = " glyphicon-ok"
+                        }
+                        if (file.responseText == "FAILED") {
+                            iconColor = " icon-failure"
+                            iconShape = " glyphicon-remove"
+                        }
+                        dynamic_content = "<span class=\\"
+                        glyphicon " + iconShape + iconColor + "\\
+                        "></span>&nbsp;";
+                        document.getElementById("div_status").innerHTML = dynamic_content;
+                    }
+                }
+            };
+            file.open("GET", "/builds/" + container + "/.final_status", true);
+            file.send();
+        }
+    </script>
+</head>
+<body>
+  <div class="page-header"><h1>Scality Artifacts</h1><br><br><span id="div_status">&nbsp;</span><span id="div_navigation">&nbsp;</span></div>
+  <ul class="list-group">
+  {% for foo in bar %}
+      <li class="list-group-item">
+          if 'subdir' in json_entry:
+              name = json_entry.pop('subdir')
+              m = re.search('([^/]+/)$', name)
+              name = m.group(1)
+
+          if 'name' in json_entry:
+              name = json_entry.pop('name')
+              m = re.search('([^/]+)$', name)
+              name = m.group(1)
+
+          <span class="glyphicon glyphicon-folder-open" aria-hidden="true">&nbsp;</span><a href="./{}">{}</a>.format(name, name)
+
+          try:
+              count = json_entry.pop('count')
+              html += '<span class="badge">{} files</span>\n'.format(count)
+          except KeyError:
+              pass
+
+          try:
+              bytes = json_entry.pop('bytes')
+              kilobytes = bytes / 1000
+              html += '&nbsp;<span class="label label-primary">%d KB</span>\n' % kilobytes
+          except KeyError:
+              pass
+
+          try:
+              lm = json_entry.pop('last_modified')
+              html += '<span class="badge">{}</span>\n'.format(lm)
+          except KeyError:
+              pass
+
+      </li>
+  {% endfor %}
+  </ul>
+</body>
+<script>if (window.location.pathname.match(/^\/builds\/[^\/]+\//)) {wait_build_status(); display_directory_navigation(); display_build_status();}</script>
+</html>

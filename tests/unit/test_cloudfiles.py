@@ -2,8 +2,11 @@ import unittest
 
 from tests.util.stream.archive_stream import streamed_archive
 from artifacts.providers.cloudfiles import CloudFiles
-from artifacts.main import api_endpoint, tenant_id, auth_url
 
+
+api_endpoint = 'https://storage101.dfw1.clouddrive.com/v1'
+tenant_id = 'MossoCloudFS_984990'
+auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 
 cf = CloudFiles(api_endpoint, tenant_id, auth_url)
 

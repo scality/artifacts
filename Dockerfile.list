@@ -1,0 +1,8 @@
+FROM tiangolo/uwsgi-nginx-flask:python3.6
+
+RUN pip install boto3 requests
+
+COPY ./artifacts-list /app
+COPY ./providers /app
+
+ENV NGINX_MAX_UPLOAD 1g
