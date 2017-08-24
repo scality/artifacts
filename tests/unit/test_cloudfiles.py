@@ -1,7 +1,7 @@
 import unittest
 
 from tests.util.stream.archive_stream import streamed_archive
-from artifacts.providers import CloudFiles
+from artifacts.providers.cloudfiles import CloudFiles
 from artifacts.main import api_endpoint, tenant_id, auth_url
 
 
