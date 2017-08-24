@@ -1,8 +1,9 @@
 import io
+import os
 
 from providers import CloudFiles
 
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, redirect
 app = Flask(__name__)
 
 
@@ -27,6 +28,14 @@ def getfile(container, filepath):
 
     return send_file(io.BytesIO(resp.content),
                      attachment_filename=filepath.split('/')[-1])
+
+
+@app.route("/builds/<path:filepath>", methods=['GET'])
+def list_builds(filepath):
+    universe = os.getenv('UNIVERSE')
+    artifacts_url = 'artifacts' if universe == 'prod' else f'artifacts-{universe}'
+    return redirect(f'https://{artifacts_url}.devsca.com/builds/{filepath}',
+                    code=302)
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
