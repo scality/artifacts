@@ -75,3 +75,17 @@ class CloudFiles():
                              headers={'Content-type': 'application/json'})
 
         return resp.json()['access']['token']['id']
+
+    def list_containers(self):
+
+        auth_token = self.authenticate()
+
+        url = f'{self.url}'
+        resp = requests.get(url,
+                            headers={
+                                'X-Auth-Token': auth_token,
+                                'Accept': 'application/json'
+                            },
+                            stream=True)
+
+        return [container['name'] for container in resp.json()]
