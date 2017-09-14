@@ -35,10 +35,12 @@ def getfile(container, filepath):
                      attachment_filename=filepath.split('/')[-1])
 
 
-#@app.route("/builds/<path:filepath>", methods=['GET'])
-#def list_builds(filepath):
-#    return redirect(f'https://{artifacts_url}/builds/{filepath}',
-#                    code=302)
+@app.route("/builds", methods=['GET'], strict_slashes=False)
+def list_builds():
+
+    resp = provider.list_containers()
+
+    return '\n'.join(resp)
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
