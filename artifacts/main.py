@@ -117,6 +117,14 @@ def get_last_failure(container_prefix, filepath):
         code=302)
 
 
+@app.route("/", methods=['GET'], defaults={'filepath': ''}, strict_slashes=False)
+@app.route("/<path:filepath>", methods=['GET'], strict_slashes=False)
+def root(filepath):
+    return redirect(
+        f'/builds/{filepath}',
+        code=302)
+
+
 if __name__ == "__main__":
     assert 'RAX_LOGIN' in os.environ
     assert 'RAX_PWD' in os.environ
