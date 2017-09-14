@@ -14,7 +14,6 @@ auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 region = 'iad3' if universe == 'prod' else 'dfw1'
 api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
-artifacts_url = f'artifacts.{universe}-private.devsca.com'
 
 
 @app.route("/upload/<container>/", methods=['PUT'])
@@ -90,7 +89,7 @@ def get_latest(container_prefix, filepath):
     except Exception:
         abort(404)
     return redirect(
-        f'https://{artifacts_url}/builds/{container}/{filepath}',
+        f'/builds/{container}/{filepath}',
         code=302)
 
 
@@ -102,7 +101,7 @@ def get_last_success(container_prefix, filepath):
     except Exception:
         abort(404)
     return redirect(
-        f'https://{artifacts_url}/builds/{container}/{filepath}',
+        f'/builds/{container}/{filepath}',
         code=302)
 
 
@@ -114,7 +113,7 @@ def get_last_failure(container_prefix, filepath):
     except Exception:
         abort(404)
     return redirect(
-        f'https://{artifacts_url}/builds/{container}/{filepath}',
+        f'/builds/{container}/{filepath}',
         code=302)
 
 
