@@ -16,7 +16,7 @@ api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
-@app.route("/upload/<container>/", methods=['PUT'])
+@app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
 def upload_archive(container):
 
     resp = provider.upload_archive(container, request.stream)
