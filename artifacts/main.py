@@ -8,15 +8,15 @@ from flask import abort, Flask, request, send_file, redirect
 app = Flask(__name__)
 
 
-api_endpoint = 'https://storage101.dfw1.clouddrive.com/v1'
+universe = os.getenv('UNIVERSE')
 tenant_id = 'MossoCloudFS_984990'
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
+region = 'iad3' if universe == 'prod' else 'dfw1'
+api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
-universe = os.getenv('UNIVERSE')
-artifacts_url = 'artifacts' if universe == 'prod' else f'artifacts-{universe}'
 
 
-@app.route("/upload/<container>", methods=['PUT'])
+@app.route("/upload/<container>/", methods=['PUT'])
 def upload_archive(container):
 
     resp = provider.upload_archive(container, request.stream)
@@ -24,7 +24,8 @@ def upload_archive(container):
     return resp.content
 
 
-@app.route("/getfile/<container>/<path:filepath>", methods=['GET'])
+@app.route("/builds/<container>", defaults={'filepath': ''}, strict_slashes=False)
+@app.route("/builds/<container>/<path:filepath>", methods=['GET'])
 def getfile(container, filepath):
 
     resp = provider.getfile(container, filepath)
@@ -33,10 +34,12 @@ def getfile(container, filepath):
                      attachment_filename=filepath.split('/')[-1])
 
 
-@app.route("/builds/<path:filepath>", methods=['GET'])
-def list_builds(filepath):
-    return redirect(f'https://{artifacts_url}.devsca.com/builds/{filepath}',
-                    code=302)
+@app.route("/builds", methods=['GET'], strict_slashes=False)
+def list_builds():
+
+    resp = provider.list_containers()
+
+    return '\n'.join(resp)
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
@@ -86,7 +89,7 @@ def get_latest(container_prefix, filepath):
     except Exception:
         abort(404)
     return redirect(
-        f'https://{artifacts_url}.devsca.com/builds/{container}/{filepath}',
+        f'/builds/{container}/{filepath}',
         code=302)
 
 
@@ -98,7 +101,7 @@ def get_last_success(container_prefix, filepath):
     except Exception:
         abort(404)
     return redirect(
-        f'https://{artifacts_url}.devsca.com/builds/{container}/{filepath}',
+        f'/builds/{container}/{filepath}',
         code=302)
 
 
@@ -110,9 +113,20 @@ def get_last_failure(container_prefix, filepath):
     except Exception:
         abort(404)
     return redirect(
-        f'https://{artifacts_url}.devsca.com/builds/{container}/{filepath}',
+        f'/builds/{container}/{filepath}',
+        code=302)
+
+
+@app.route("/", methods=['GET'], defaults={'filepath': ''}, strict_slashes=False)
+@app.route("/<path:filepath>", methods=['GET'], strict_slashes=False)
+def root(filepath):
+    return redirect(
+        f'/builds/{filepath}',
         code=302)
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=True, port=80)
+    assert 'RAX_LOGIN' in os.environ
+    assert 'RAX_PWD' in os.environ
+    assert 'UNIVERSE' in os.environ
+    app.run(host='0.0.0.0', debug=True, port=50000)

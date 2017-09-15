@@ -80,8 +80,7 @@ class CloudFiles():
 
         auth_token = self.authenticate()
 
-        url = f'{self.url}'
-        resp = requests.get(url,
+        resp = requests.get(f'{self.url}',
                             headers={
                                 'X-Auth-Token': auth_token,
                                 'Accept': 'application/json'
