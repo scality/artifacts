@@ -3,8 +3,12 @@ import io
 import os
 
 from providers import CloudFiles
-
-from flask import abort, Flask, request, send_file, redirect
+from flask import (abort,
+                   Flask,
+                   request,
+                   send_file,
+                   redirect,
+                   render_template)
 app = Flask(__name__)
 
 
@@ -24,7 +28,6 @@ def upload_archive(container):
     return resp.content
 
 
-@app.route("/builds/<container>", defaults={'filepath': ''}, strict_slashes=False)
 @app.route("/builds/<container>/<path:filepath>", methods=['GET'])
 def getfile(container, filepath):
 
@@ -34,12 +37,18 @@ def getfile(container, filepath):
                      attachment_filename=filepath.split('/')[-1])
 
 
-@app.route("/builds", methods=['GET'], strict_slashes=False)
-def list_builds():
+#@app.route("/builds/<container>", defaults={'filepath': ''}, strict_slashes=False)
+#@app.route("/builds/<container>/<path:filepath>/", defaults={'filepath': ''})
+#    return render_template('listing.html', entries=resp)
 
-    resp = provider.list_containers()
 
-    return '\n'.join(resp)
+@app.route("/builds", defaults={'filepath': ''}, methods=['GET'], strict_slashes=False)
+@app.route("/builds/<path:filepath>/", methods=['GET'])
+def listfiles(filepath):
+
+    resp = provider.listfiles(filepath)
+
+    return render_template('listing.html', entries=resp)
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
@@ -62,8 +71,10 @@ def find_container(provider, prefix, condition=''):
     if condition not in ['SUCCESSFUL', 'FAILED', '']:
         raise Exception('invalid condition (%s)' % condition)
 
-    containers = [container for container in provider.list_containers()
-                  if container.startswith(prefix)]
+    resp = provider.list_containers()
+
+    containers = [container['name'] for container in resp
+                  if container['name'].startswith(prefix)]
     containers.sort()
 
     for container in reversed(containers):
@@ -117,11 +128,10 @@ def get_last_failure(container_prefix, filepath):
         code=302)
 
 
-@app.route("/", methods=['GET'], defaults={'filepath': ''}, strict_slashes=False)
-@app.route("/<path:filepath>", methods=['GET'], strict_slashes=False)
-def root(filepath):
+@app.route("/", methods=['GET'], strict_slashes=False)
+def root():
     return redirect(
-        f'/builds/{filepath}',
+        f'/builds',
         code=302)
 
 

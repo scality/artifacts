@@ -1,0 +1,84 @@
+<html>
+<head>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<style>
+.icon-success {
+    color: #5CB85C;
+}
+.icon-failure {
+    color: #D9534F;
+}
+</style>
+<script>
+function display_directory_navigation() {
+    var dirs = window.location.pathname.split('/')
+    var cdir = ""
+    var i
+    for (i=1; i<dirs.length-2; i++) {
+        cdir += "<b><a href=\\"/" + dirs.slice(1,i+1).join('/')  + "/\\">" + dirs[i] + "</a></b> / "
+    }
+    cdir += dirs[dirs.length-2]
+    document.getElementById("div_navigation").innerHTML = cdir;
+}
+function wait_build_status() {
+    document.getElementById("div_status").innerHTML = "<span class=\\"glyphicon glyphicon-minus\\"></span>&nbsp;"
+}
+function display_build_status() {
+    var container = window.location.pathname.match(/^\/builds\/([^\/]+)\//)[1]
+    var file = new XMLHttpRequest();
+    file.onreadystatechange = function() {
+        if (file.readyState == 4) {
+            if (file.status == 200) {
+                var dynamic_content = ""
+                var iconColor = ""
+                var iconShape = " glyphicon-remove"
+                if (file.responseText == "SUCCESSFUL") {
+                    iconColor = " icon-success"
+                    iconShape = " glyphicon-ok"
+                }
+                if (file.responseText == "FAILED") {
+                    iconColor = " icon-failure"
+                    iconShape = " glyphicon-remove"
+                }
+                dynamic_content = "<span class=\\"glyphicon" + iconShape + iconColor + " \\"></span>&nbsp;";
+                document.getElementById("div_status").innerHTML = dynamic_content;
+            }
+        }
+    };
+    file.open("GET", "/builds/" + container + "/.final_status", true);
+    file.send();
+}
+</script>
+</head>
+
+<body>
+
+<div class="page-header">
+<h1>Artifacts</h1>
+<br><br>
+<span id="div_status">&nbsp;</span><span id="div_navigation">&nbsp;</span>
+</div>
+
+<ul class="list-group">
+
+{% for entry in entries %}
+<li class="list-group-item">
+<span class="glyphicon glyphicon-folder-open" aria-hidden="true">&nbsp;</span><a href="./{{ entry.name }}">{{ entry.name.split('/')[-1] }}</a>
+<span class="badge">{{ entry.count }} files</span>
+&nbsp;<span class="label label-primary">{{ (entry.bytes / 1024)|int }} KB</span>
+<span class="badge">{{ entry.last_modified }}</span>
+</li>
+{% endfor %}
+
+</ul>
+</body>
+
+<script>if (window.location.pathname.match(/^\/builds\/[^\/]+\//)) {wait_build_status(); display_directory_navigation(); display_build_status();}</script>
+</html>
