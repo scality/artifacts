@@ -127,6 +127,11 @@ def root(filepath):
         code=302)
 
 
+@app.route("/healthz", methods=['GET'])
+def healthz():
+    return 'OK!'
+
+
 if __name__ == "__main__":
     assert 'RAX_LOGIN' in os.environ
     assert 'RAX_PWD' in os.environ
