@@ -30,9 +30,11 @@ def getfile(container, filepath):
 
     resp = provider.getfile(container, filepath)
 
+    if resp.status_code == 404:
+        abort(404)
+
     return send_file(io.BytesIO(resp.content),
                      attachment_filename=filepath.split('/')[-1])
-
 
 @app.route("/builds", methods=['GET'], strict_slashes=False)
 def list_builds():
