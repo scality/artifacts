@@ -90,8 +90,12 @@ def get_latest(container_prefix, filepath):
         container = find_container(provider, container_prefix)
     except Exception:
         abort(404)
+    if filepath:
+        redirect_url = f'/builds/{container}/{filepath}'
+    else:
+        redirect_url = f'/builds/{container}'
     return redirect(
-        f'/builds/{container}/{filepath}',
+        redirect_url,
         code=302)
 
 
@@ -102,8 +106,12 @@ def get_last_success(container_prefix, filepath):
         container = find_container(provider, container_prefix, 'SUCCESSFUL')
     except Exception:
         abort(404)
+    if filepath:
+        redirect_url = f'/builds/{container}/{filepath}'
+    else:
+        redirect_url = f'/builds/{container}'
     return redirect(
-        f'/builds/{container}/{filepath}',
+        redirect_url,
         code=302)
 
 
@@ -114,8 +122,12 @@ def get_last_failure(container_prefix, filepath):
         container = find_container(provider, container_prefix, 'FAILED')
     except Exception:
         abort(404)
+    if filepath:
+        redirect_url = f'/builds/{container}/{filepath}'
+    else:
+        redirect_url = f'/builds/{container}'
     return redirect(
-        f'/builds/{container}/{filepath}',
+        redirect_url,
         code=302)
 
 
