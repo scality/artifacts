@@ -1,4 +1,6 @@
+import datetime
 import tarfile
+import time
 import requests
 import os
 
@@ -21,6 +23,8 @@ class CloudFiles():
     def __init__(self, api_endpoint, tenant_id, auth_url):
         self.url = f'{api_endpoint}/{tenant_id}'
         self.auth_url = auth_url
+        self.auth_token = None
+        self.auth_token_expiration = None
 
     def upload_archive(self, container, fileobj):
 
@@ -61,20 +65,28 @@ class CloudFiles():
         return resp
 
     def authenticate(self):
-        data = {'auth':
-                {'passwordCredentials':
-                    {
-                        'username': os.getenv('RAX_LOGIN'),
-                        'password': os.getenv('RAX_PWD')
+
+        now = datetime.datetime.utcfromtimestamp(time.time() - 60).isoformat()
+
+        if not self.auth_token or now >= self.auth_token_expiration:
+            data = {'auth':
+                    {'passwordCredentials':
+                        {
+                            'username': os.getenv('RAX_LOGIN'),
+                            'password': os.getenv('RAX_PWD')
+                        }
+                     }
                     }
-                 }
-                }
 
-        resp = requests.post(self.auth_url,
-                             json=data,
-                             headers={'Content-type': 'application/json'})
+            resp = requests.post(self.auth_url,
+                                 json=data,
+                                 headers={'Content-type': 'application/json'})
 
-        return resp.json()['access']['token']['id']
+            token = resp.json()['access']['token']
+            self.auth_token = token['id']
+            self.auth_token_expiration = token['expires']
+
+        return self.auth_token
 
     def listfiles(self, path):
 

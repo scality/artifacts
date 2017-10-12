@@ -20,7 +20,7 @@ api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
-@app.route("/upload/<container>/", methods=['PUT'])
+@app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
 def upload_archive(container):
 
     resp = provider.upload_archive(container, request.stream)
@@ -33,13 +33,11 @@ def getfile(container, filepath):
 
     resp = provider.getfile(container, filepath)
 
+    if resp.status_code >= 400:
+        abort(resp.status_code)
+
     return send_file(io.BytesIO(resp.content),
                      attachment_filename=filepath.split('/')[-1])
-
-
-#@app.route("/builds/<container>", defaults={'filepath': ''}, strict_slashes=False)
-#@app.route("/builds/<container>/<path:filepath>/", defaults={'filepath': ''})
-#    return render_template('listing.html', entries=resp)
 
 
 @app.route("/builds", defaults={'filepath': ''}, methods=['GET'], strict_slashes=False)
@@ -99,8 +97,12 @@ def get_latest(container_prefix, filepath):
         container = find_container(provider, container_prefix)
     except Exception:
         abort(404)
+    if filepath:
+        redirect_url = f'/builds/{container}/{filepath}'
+    else:
+        redirect_url = f'/builds/{container}'
     return redirect(
-        f'/builds/{container}/{filepath}',
+        redirect_url,
         code=302)
 
 
@@ -111,8 +113,12 @@ def get_last_success(container_prefix, filepath):
         container = find_container(provider, container_prefix, 'SUCCESSFUL')
     except Exception:
         abort(404)
+    if filepath:
+        redirect_url = f'/builds/{container}/{filepath}'
+    else:
+        redirect_url = f'/builds/{container}'
     return redirect(
-        f'/builds/{container}/{filepath}',
+        redirect_url,
         code=302)
 
 
@@ -123,8 +129,12 @@ def get_last_failure(container_prefix, filepath):
         container = find_container(provider, container_prefix, 'FAILED')
     except Exception:
         abort(404)
+    if filepath:
+        redirect_url = f'/builds/{container}/{filepath}'
+    else:
+        redirect_url = f'/builds/{container}'
     return redirect(
-        f'/builds/{container}/{filepath}',
+        redirect_url,
         code=302)
 
 
@@ -133,6 +143,11 @@ def root():
     return redirect(
         f'/builds',
         code=302)
+
+
+@app.route("/healthz", methods=['GET'])
+def healthz():
+    return 'OK!'
 
 
 if __name__ == "__main__":
