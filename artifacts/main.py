@@ -6,6 +6,7 @@ from providers import CloudFiles
 from flask import (abort,
                    Flask,
                    request,
+                   Response,
                    send_file,
                    redirect,
                    render_template)
@@ -28,25 +29,57 @@ def upload_archive(container):
     return resp.content
 
 
+@app.route("/builds", defaults={'container': ''}, methods=['GET'])
+@app.route("/builds/<container>", methods=['GET'])
+def add_final_slash(container):
+
+    query_string = request.query_string.decode()
+
+    if container:
+        redirect_url = f'/builds/{container}/'
+    else:
+        redirect_url = f'/builds/'
+
+    if query_string:
+        redirect_url = f'{redirect_url}?{query_string}'
+
+    return redirect(
+        redirect_url,
+        code=302)
+
+
+@app.route("/builds/", defaults={'container': '', 'filepath': ''},
+           methods=['GET'])
+@app.route("/builds/<container>/", defaults={'filepath': ''},
+           methods=['GET'])
 @app.route("/builds/<container>/<path:filepath>", methods=['GET'])
-def getfile(container, filepath):
+def displaycontent(container, filepath):
 
-    resp = provider.getfile(container, filepath)
+    if not filepath or filepath[-1] == '/':
+        output_format = request.args.get('format')
 
-    if resp.status_code >= 400:
-        abort(resp.status_code)
+        resp = provider.listfiles(container, filepath, output_format)
 
-    return send_file(io.BytesIO(resp.content),
-                     attachment_filename=filepath.split('/')[-1])
+        if output_format != "txt":
+            template_file = 'listing.html'
+        else:
+            template_file = 'listing.txt'
 
+        return render_template(template_file, entries=resp.json(),
+                               prefix=filepath)
+    else:
+        resp = provider.getfile(container, filepath)
 
-@app.route("/builds", defaults={'filepath': ''}, methods=['GET'], strict_slashes=False)
-@app.route("/builds/<path:filepath>/", methods=['GET'])
-def listfiles(filepath):
+        if resp.status_code >= 400:
+            abort(resp.status_code)
 
-    resp = provider.listfiles(filepath)
+        mime_type = resp.headers['Content-Type']
 
-    return render_template('listing.html', entries=resp)
+        def generate():
+            for chunk in resp.iter_content(8192):
+                yield chunk
+
+        return Response(generate(), mimetype=mime_type)
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
@@ -69,9 +102,9 @@ def find_container(provider, prefix, condition=''):
     if condition not in ['SUCCESSFUL', 'FAILED', '']:
         raise Exception('invalid condition (%s)' % condition)
 
-    resp = provider.list_containers()
+    resp = provider.listfiles("", "", None)
 
-    containers = [container['name'] for container in resp
+    containers = [container['name'] for container in resp.json()
                   if container['name'].startswith(prefix)]
     containers.sort()
 
@@ -80,7 +113,8 @@ def find_container(provider, prefix, condition=''):
             return container
 
         try:
-            status = provider.getfile(container, '.final_status').content.decode()
+            status = provider.getfile(container,
+                                      '.final_status').content.decode()
         except Exception:
             status = 'INCOMPLETE'
 
