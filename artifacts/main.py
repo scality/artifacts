@@ -30,8 +30,8 @@ def getfile(container, filepath):
 
     resp = provider.getfile(container, filepath)
 
-    if resp.status_code == 404:
-        abort(404)
+    if resp.status_code >= 400:
+        abort(resp.status_code)
 
     return send_file(io.BytesIO(resp.content),
                      attachment_filename=filepath.split('/')[-1])
