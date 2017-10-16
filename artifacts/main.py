@@ -3,8 +3,13 @@ import io
 import os
 
 from providers import CloudFiles
-
-from flask import abort, Flask, request, send_file, redirect
+from flask import (abort,
+                   Flask,
+                   request,
+                   Response,
+                   send_file,
+                   redirect,
+                   render_template)
 app = Flask(__name__)
 
 
@@ -24,24 +29,57 @@ def upload_archive(container):
     return resp.content
 
 
-@app.route("/builds/<container>", defaults={'filepath': ''}, strict_slashes=False)
+@app.route("/builds", defaults={'container': ''}, methods=['GET'])
+@app.route("/builds/<container>", methods=['GET'])
+def add_final_slash(container):
+
+    query_string = request.query_string.decode()
+
+    if container:
+        redirect_url = f'/builds/{container}/'
+    else:
+        redirect_url = f'/builds/'
+
+    if query_string:
+        redirect_url = f'{redirect_url}?{query_string}'
+
+    return redirect(
+        redirect_url,
+        code=302)
+
+
+@app.route("/builds/", defaults={'container': '', 'filepath': ''},
+           methods=['GET'])
+@app.route("/builds/<container>/", defaults={'filepath': ''},
+           methods=['GET'])
 @app.route("/builds/<container>/<path:filepath>", methods=['GET'])
-def getfile(container, filepath):
+def displaycontent(container, filepath):
 
-    resp = provider.getfile(container, filepath)
+    if not filepath or filepath[-1] == '/':
+        output_format = request.args.get('format')
 
-    if resp.status_code >= 400:
-        abort(resp.status_code)
+        resp = provider.listfiles(container, filepath, output_format)
 
-    return send_file(io.BytesIO(resp.content),
-                     attachment_filename=filepath.split('/')[-1])
+        if output_format != "txt":
+            template_file = 'listing.html'
+        else:
+            template_file = 'listing.txt'
 
-@app.route("/builds", methods=['GET'], strict_slashes=False)
-def list_builds():
+        return render_template(template_file, entries=resp.json(),
+                               prefix=filepath)
+    else:
+        resp = provider.getfile(container, filepath)
 
-    resp = provider.list_containers()
+        if resp.status_code >= 400:
+            abort(resp.status_code)
 
-    return '\n'.join(resp)
+        mime_type = resp.headers['Content-Type']
+
+        def generate():
+            for chunk in resp.iter_content(8192):
+                yield chunk
+
+        return Response(generate(), mimetype=mime_type)
 
 
 @app.route("/delete_object/<container>/<path:filepath>", methods=['DELETE'])
@@ -64,8 +102,10 @@ def find_container(provider, prefix, condition=''):
     if condition not in ['SUCCESSFUL', 'FAILED', '']:
         raise Exception('invalid condition (%s)' % condition)
 
-    containers = [container for container in provider.list_containers()
-                  if container.startswith(prefix)]
+    resp = provider.listfiles("", "", None)
+
+    containers = [container['name'] for container in resp.json()
+                  if container['name'].startswith(prefix)]
     containers.sort()
 
     for container in reversed(containers):
@@ -73,7 +113,8 @@ def find_container(provider, prefix, condition=''):
             return container
 
         try:
-            status = provider.getfile(container, '.final_status').content.decode()
+            status = provider.getfile(container,
+                                      '.final_status').content.decode()
         except Exception:
             status = 'INCOMPLETE'
 
@@ -131,11 +172,10 @@ def get_last_failure(container_prefix, filepath):
         code=302)
 
 
-@app.route("/", methods=['GET'], defaults={'filepath': ''}, strict_slashes=False)
-@app.route("/<path:filepath>", methods=['GET'], strict_slashes=False)
-def root(filepath):
+@app.route("/", methods=['GET'], strict_slashes=False)
+def root():
     return redirect(
-        f'/builds/{filepath}',
+        f'/builds',
         code=302)
 
 

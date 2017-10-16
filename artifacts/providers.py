@@ -88,15 +88,18 @@ class CloudFiles():
 
         return self.auth_token
 
-    def list_containers(self):
+    def listfiles(self, container, filepath, output_format):
 
         auth_token = self.authenticate()
 
-        resp = requests.get(f'{self.url}',
-                            headers={
-                                'X-Auth-Token': auth_token,
-                                'Accept': 'application/json'
-                            },
-                            stream=True)
+        if output_format != "txt":
+            url = f'{self.url}/{container}/?prefix={filepath}&delimiter=/'
+        else:
+            url = f'{self.url}/{container}/?prefix={filepath}'
 
-        return [container['name'] for container in resp.json()]
+        headers = {'X-Auth-Token': auth_token,
+                   'Accept': "application/json"}
+
+        resp = requests.get(url, headers=headers, stream=True)
+
+        return resp
