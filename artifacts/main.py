@@ -9,7 +9,8 @@ from flask import (abort,
                    Response,
                    send_file,
                    redirect,
-                   render_template)
+                   render_template,
+                   url_for)
 app = Flask(__name__)
 
 
@@ -19,6 +20,21 @@ auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 region = 'iad3' if universe == 'prod' else 'dfw1'
 api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
+
+
+class PrefixMiddleware(object):
+    """Allow application on sub path specified via SCRIPT_NAME."""
+
+    def __init__(self, app, prefix=''):
+        self.app = app
+        self.prefix = prefix
+
+    def __call__(self, environ, start_response):
+        environ['SCRIPT_NAME'] = self.prefix
+        return self.app(environ, start_response)
+
+app.wsgi_app = PrefixMiddleware(app.wsgi_app,
+                                prefix=os.getenv('SCRIPT_NAME', ''))
 
 
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
@@ -35,10 +51,11 @@ def add_final_slash(container):
 
     query_string = request.query_string.decode()
 
+    content_url = url_for('displaycontent')
     if container:
-        redirect_url = f'/builds/{container}/'
+        redirect_url = f'{content_url}{container}/'
     else:
-        redirect_url = f'/builds/'
+        redirect_url = f'{content_url}'
 
     if query_string:
         redirect_url = f'{redirect_url}?{query_string}'
@@ -65,8 +82,11 @@ def displaycontent(container, filepath):
         else:
             template_file = 'listing.txt'
 
-        return render_template(template_file, entries=resp.json(),
-                               prefix=filepath)
+        return render_template(
+            template_file,
+            entries=resp.json(),
+            prefix=filepath,
+            builds_url=url_for('displaycontent'))
     else:
         resp = provider.getfile(container, filepath)
 
@@ -131,10 +151,11 @@ def get_latest(container_prefix, filepath):
         container = find_container(provider, container_prefix)
     except Exception:
         abort(404)
+    content_url = url_for('displaycontent')
     if filepath:
-        redirect_url = f'/builds/{container}/{filepath}'
+        redirect_url = f'{content_url}{container}/{filepath}'
     else:
-        redirect_url = f'/builds/{container}'
+        redirect_url = f'{content_url}{container}'
     return redirect(
         redirect_url,
         code=302)
@@ -147,10 +168,11 @@ def get_last_success(container_prefix, filepath):
         container = find_container(provider, container_prefix, 'SUCCESSFUL')
     except Exception:
         abort(404)
+    content_url = url_for('displaycontent')
     if filepath:
-        redirect_url = f'/builds/{container}/{filepath}'
+        redirect_url = f'{content_url}{container}/{filepath}'
     else:
-        redirect_url = f'/builds/{container}'
+        redirect_url = f'{content_url}{container}'
     return redirect(
         redirect_url,
         code=302)
@@ -163,10 +185,11 @@ def get_last_failure(container_prefix, filepath):
         container = find_container(provider, container_prefix, 'FAILED')
     except Exception:
         abort(404)
+    content_url = url_for('displaycontent')
     if filepath:
-        redirect_url = f'/builds/{container}/{filepath}'
+        redirect_url = f'{content_url}{container}/{filepath}'
     else:
-        redirect_url = f'/builds/{container}'
+        redirect_url = f'{content_url}{container}'
     return redirect(
         redirect_url,
         code=302)
@@ -175,7 +198,7 @@ def get_last_failure(container_prefix, filepath):
 @app.route("/", methods=['GET'], strict_slashes=False)
 def root():
     return redirect(
-        f'/builds',
+        url_for('displaycontent'),
         code=302)
 
 
