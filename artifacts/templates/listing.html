@@ -31,7 +31,7 @@ function wait_build_status() {
     document.getElementById("div_status").innerHTML = '<span class="glyphicon glyphicon-minus"></span>&nbsp;';
 }
 function display_build_status() {
-    var container = window.location.pathname.match(/^\/builds\/([^\/]+)\//)[1];
+    var container = window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}([^\/]+)\//)[1];
     var file = new XMLHttpRequest();
     file.onreadystatechange = function() {
         if (file.readyState == 4) {
@@ -52,7 +52,7 @@ function display_build_status() {
             }
         }
     };
-    file.open("GET", "/builds/" + container + "/.final_status", true);
+    file.open("GET", "{{ builds_url }}" + container + "/.final_status", true);
     file.send();
 }
 </script>
@@ -95,5 +95,5 @@ function display_build_status() {
 </ul>
 </body>
 
-<script>if (window.location.pathname.match(/^\/builds\/[^\/]+\//)) {wait_build_status(); display_directory_navigation(); display_build_status();}</script>
+<script>if (window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}[^\/]+\//)) {wait_build_status(); display_directory_navigation(); display_build_status();}</script>
 </html>
