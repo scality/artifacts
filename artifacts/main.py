@@ -23,19 +23,20 @@ provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
 class PrefixMiddleware(object):
-    """Allow application on sub path specified via SCRIPT_NAME."""
+    """Allow application to live booth at root and on subpath.
 
-    def __init__(self, app, prefix=''):
+    If the request contains a HTTP header Script-Name, use its
+    value as the prefix for redirects.
+
+    """
+    def __init__(self, app):
         self.app = app
-        self.prefix = prefix
 
     def __call__(self, environ, start_response):
-        print(environ)
-        environ['SCRIPT_NAME'] = self.prefix
+        environ['SCRIPT_NAME'] = environ.get('HTTP_SCRIPT_NAME', '')
         return self.app(environ, start_response)
 
-app.wsgi_app = PrefixMiddleware(app.wsgi_app,
-                                prefix=os.getenv('SCRIPT_NAME', ''))
+app.wsgi_app = PrefixMiddleware(app.wsgi_app)
 
 
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
@@ -198,7 +199,6 @@ def get_last_failure(container_prefix, filepath):
 
 @app.route("/", methods=['GET'], strict_slashes=False)
 def root():
-    print(request.headers)
     return redirect(
         url_for('displaycontent'),
         code=302)
