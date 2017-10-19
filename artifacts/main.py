@@ -197,6 +197,7 @@ def get_last_failure(container_prefix, filepath):
 
 @app.route("/", methods=['GET'], strict_slashes=False)
 def root():
+    print(request.headers)
     return redirect(
         url_for('displaycontent'),
         code=302)
