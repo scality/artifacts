@@ -30,6 +30,7 @@ class PrefixMiddleware(object):
         self.prefix = prefix
 
     def __call__(self, environ, start_response):
+        print(environ)
         environ['SCRIPT_NAME'] = self.prefix
         return self.app(environ, start_response)
 
