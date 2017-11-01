@@ -5,4 +5,4 @@ RUN pip install awscli requests
 
 COPY ./artifacts /app
 
-ENV NGINX_MAX_UPLOAD 1g
+ENV NGINX_MAX_UPLOAD 2g
