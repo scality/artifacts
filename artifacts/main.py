@@ -18,7 +18,7 @@ universe = os.getenv('UNIVERSE')
 tenant_id = 'MossoCloudFS_984990'
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 region = 'iad3' if universe == 'prod' else 'dfw1'
-api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
+api_endpoint = f'https://snet-storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
