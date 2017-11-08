@@ -15,10 +15,12 @@ app = Flask(__name__)
 
 
 universe = os.getenv('UNIVERSE')
+virtual_host = os.getenv('VIRTUAL_HOST')
 tenant_id = 'MossoCloudFS_984990'
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 region = 'iad3' if universe == 'prod' else 'dfw1'
-api_endpoint = f'https://storage101.{region}.clouddrive.com/v1'
+network = '' if 'eve-k8' in virtual_host else 'snet-'
+api_endpoint = f'https://{network}storage101.{region}.clouddrive.com/v1'
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
@@ -44,7 +46,16 @@ def upload_archive(container):
 
     resp = provider.upload_archive(container, request.stream)
 
-    return resp.content
+    if resp.status_code >= 400:
+        abort(resp.status_code)
+
+    mime_type = resp.headers['Content-Type']
+
+    def generate():
+        for chunk in resp.iter_content(8192):
+            yield chunk
+
+    return Response(generate(), mimetype=mime_type)
 
 
 @app.route("/builds", defaults={'container': ''}, methods=['GET'])
@@ -213,4 +224,5 @@ if __name__ == "__main__":
     assert 'RAX_LOGIN' in os.environ
     assert 'RAX_PWD' in os.environ
     assert 'UNIVERSE' in os.environ
+    assert 'VIRTUAL_HOST' in os.environ
     app.run(host='0.0.0.0', debug=True, port=50000)
