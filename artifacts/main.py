@@ -44,7 +44,16 @@ def upload_archive(container):
 
     resp = provider.upload_archive(container, request.stream)
 
-    return resp.content
+    if resp.status_code >= 400:
+        abort(resp.status_code)
+
+    mime_type = resp.headers['Content-Type']
+
+    def generate():
+        for chunk in resp.iter_content(8192):
+            yield chunk
+
+    return Response(generate(), mimetype=mime_type)
 
 
 @app.route("/builds", defaults={'container': ''}, methods=['GET'])
