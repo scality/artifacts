@@ -14,10 +14,9 @@ from flask import (abort,
 app = Flask(__name__)
 
 
-tenant_id = 'MossoCloudFS_984990'
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 api_endpoint = os.getenv('RAX_ENDPOINT')
-provider = CloudFiles(api_endpoint, tenant_id, auth_url)
+provider = CloudFiles(api_endpoint, auth_url)
 
 
 class PrefixMiddleware(object):

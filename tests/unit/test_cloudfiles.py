@@ -2,10 +2,10 @@ import unittest
 
 from tests.util.stream.archive_stream import streamed_archive
 from artifacts.providers import CloudFiles
-from artifacts.main import api_endpoint, tenant_id, auth_url
+from artifacts.main import api_endpoint, auth_url
 
 
-cf = CloudFiles(api_endpoint, tenant_id, auth_url)
+cf = CloudFiles(api_endpoint, auth_url)
 
 
 class CloudFilesTestCase(unittest.TestCase):

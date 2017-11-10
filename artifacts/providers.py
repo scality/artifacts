@@ -20,8 +20,8 @@ class S3():
 
 class CloudFiles():
 
-    def __init__(self, api_endpoint, tenant_id, auth_url):
-        self.url = f'{api_endpoint}/{tenant_id}'
+    def __init__(self, api_endpoint, auth_url):
+        self.url = api_endpoint.rstrip('/')
         self.auth_url = auth_url
         self.auth_token = None
         self.auth_token_expiration = None
