@@ -29,10 +29,19 @@ class CloudFiles():
     def upload_archive(self, container, fileobj):
 
         auth_token = self.authenticate()
+
+        def feed():
+            while True:
+                chunk = fileobj.read(8192)
+                if not chunk:
+                    break
+                yield chunk
+
         resp = requests.put(f'{self.url}/{container}',
-                            data=fileobj,
+                            data=feed(),
                             params={'extract-archive': 'tar.gz'},
-                            headers={'X-Auth-Token': auth_token})
+                            headers={'X-Auth-Token': auth_token},
+                            stream=True)
 
         return resp
 
