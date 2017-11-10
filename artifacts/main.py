@@ -14,13 +14,9 @@ from flask import (abort,
 app = Flask(__name__)
 
 
-universe = os.getenv('UNIVERSE')
-virtual_host = os.getenv('VIRTUAL_HOST')
 tenant_id = 'MossoCloudFS_984990'
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
-region = 'iad3' if universe == 'prod' else 'dfw1'
-network = '' if 'eve-k8' in virtual_host else 'snet-'
-api_endpoint = f'https://{network}storage101.{region}.clouddrive.com/v1'
+api_endpoint = os.getenv('RAX_ENDPOINT')
 provider = CloudFiles(api_endpoint, tenant_id, auth_url)
 
 
@@ -223,6 +219,5 @@ def healthz():
 if __name__ == "__main__":
     assert 'RAX_LOGIN' in os.environ
     assert 'RAX_PWD' in os.environ
-    assert 'UNIVERSE' in os.environ
-    assert 'VIRTUAL_HOST' in os.environ
+    assert 'RAX_ENDPOINT' in os.environ
     app.run(host='0.0.0.0', debug=True, port=50000)
