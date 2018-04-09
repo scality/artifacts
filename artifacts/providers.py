@@ -10,6 +10,9 @@ class S3():
     def upload_archive(self, fileobj, url):
         pass
 
+    def headfile(self):
+        pass
+
     def getfile(self):
         pass
 
@@ -42,6 +45,15 @@ class CloudFiles():
                             params={'extract-archive': 'tar.gz'},
                             headers={'X-Auth-Token': auth_token},
                             stream=True)
+
+        return resp
+
+    def headfile(self, container, filepath):
+
+        auth_token = self.authenticate()
+
+        resp = requests.head(f'{self.url}/{container}/{filepath}',
+                             headers={'X-Auth-Token': auth_token})
 
         return resp
 

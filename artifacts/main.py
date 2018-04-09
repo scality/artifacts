@@ -96,7 +96,7 @@ def displaycontent(container, filepath):
             prefix=filepath,
             builds_url=url_for('displaycontent'))
     else:
-        resp = provider.getfile(container, filepath)
+        resp = provider.headfile(container, filepath)
 
         if resp.status_code >= 400:
             abort(resp.status_code)
@@ -104,8 +104,34 @@ def displaycontent(container, filepath):
         mime_type = resp.headers['Content-Type']
 
         def generate():
-            for chunk in resp.iter_content(8192):
-                yield chunk
+            nb_chunks_read = 0
+            nb_chunks_sent = 0
+            max_attempts = 3
+            for attempt in range(1, max_attempts):
+                nb_chunks_read = 0
+
+                try:
+                    resp = provider.getfile(container, filepath)
+                except:
+                    if attempt < max_attempts:
+                        continue
+                    raise
+
+                if resp.status_code >= 400:
+                    abort(resp.status_code)
+
+                try:
+                    for chunk in resp.iter_content(8192):
+                        nb_chunks_read += 1
+                        if nb_chunks_read > nb_chunks_sent:
+                            yield chunk
+                            nb_chunks_sent += 1
+                except:
+                    if attempt < max_attempts:
+                        continue
+                    raise
+
+                break
 
         return Response(generate(), mimetype=mime_type)
 
