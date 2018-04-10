@@ -57,13 +57,15 @@ class CloudFiles():
 
         return resp
 
-    def getfile(self, container, filepath):
+    def getfile(self, container, filepath, offset=0):
 
         auth_token = self.authenticate()
 
+        headers = {'X-Auth-Token': auth_token,
+                   'Range': "bytes=%d-" % offset}
+
         resp = requests.get(f'{self.url}/{container}/{filepath}',
-                            headers={'X-Auth-Token': auth_token},
-                            stream=True)
+                            headers=headers, stream=True)
 
         return resp
 

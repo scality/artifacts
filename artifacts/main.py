@@ -104,14 +104,14 @@ def displaycontent(container, filepath):
         mime_type = resp.headers['Content-Type']
 
         def generate():
-            nb_chunks_read = 0
+            chunk_size = 8192
             nb_chunks_sent = 0
             max_attempts = 3
-            for attempt in range(1, max_attempts):
-                nb_chunks_read = 0
-
+            for attempt in range(1, max_attempts + 1):
                 try:
-                    resp = provider.getfile(container, filepath)
+                    offset = nb_chunks_sent * chunk_size
+                    resp = provider.getfile(container, filepath,
+                                            offset=offset)
                 except:
                     if attempt < max_attempts:
                         continue
@@ -121,11 +121,9 @@ def displaycontent(container, filepath):
                     abort(resp.status_code)
 
                 try:
-                    for chunk in resp.iter_content(8192):
-                        nb_chunks_read += 1
-                        if nb_chunks_read > nb_chunks_sent:
-                            yield chunk
-                            nb_chunks_sent += 1
+                    for chunk in resp.iter_content(chunk_size):
+                        yield chunk
+                        nb_chunks_sent += 1
                 except:
                     if attempt < max_attempts:
                         continue
