@@ -10,6 +10,9 @@ class S3():
     def upload_archive(self, fileobj, url):
         pass
 
+    def headfile(self):
+        pass
+
     def getfile(self):
         pass
 
@@ -45,13 +48,24 @@ class CloudFiles():
 
         return resp
 
-    def getfile(self, container, filepath):
+    def headfile(self, container, filepath):
 
         auth_token = self.authenticate()
 
+        resp = requests.head(f'{self.url}/{container}/{filepath}',
+                             headers={'X-Auth-Token': auth_token})
+
+        return resp
+
+    def getfile(self, container, filepath, offset=0):
+
+        auth_token = self.authenticate()
+
+        headers = {'X-Auth-Token': auth_token,
+                   'Range': "bytes=%d-" % offset}
+
         resp = requests.get(f'{self.url}/{container}/{filepath}',
-                            headers={'X-Auth-Token': auth_token},
-                            stream=True)
+                            headers=headers, stream=True)
 
         return resp
 
