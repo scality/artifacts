@@ -5,22 +5,6 @@ import requests
 import os
 
 
-class S3():
-
-    def upload_archive(self, fileobj, url):
-        pass
-
-    def headfile(self):
-        pass
-
-    def getfile(self):
-        pass
-
-    def extract(self, archive_path, dirname):
-        with tarfile.open(archive_path, 'r:gz') as a:
-            a.extractall(dirname)
-
-
 class CloudFiles():
 
     def __init__(self, api_endpoint, auth_url):
