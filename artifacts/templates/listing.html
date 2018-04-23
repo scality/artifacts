@@ -18,11 +18,19 @@
 </style>
 <script>
 function display_directory_navigation() {
+    var show_dir = false;
     var dirs = window.location.pathname.split('/');
     var cdir = '';
     var i;
     for (i=1; i<dirs.length-2; i++) {
-        cdir += '<b><a href="/' + dirs.slice(1,i+1).join('/')  + '/">' + dirs[i] + '</a></b> / ';
+        if (!show_dir) {
+            if (dirs[i] == "builds") {
+                show_dir = true
+            }
+        }
+        if (show_dir) {
+            cdir += '<b><a href="/' + dirs.slice(1,i+1).join('/')  + '/">' + dirs[i] + '</a></b> / ';
+        }
     }
     cdir += dirs[dirs.length-2];
     document.getElementById("div_navigation").innerHTML = cdir;
