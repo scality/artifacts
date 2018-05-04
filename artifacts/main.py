@@ -36,12 +36,26 @@ class PrefixMiddleware(object):
 app.wsgi_app = PrefixMiddleware(app.wsgi_app)
 
 
+def consume_request_body(stream):
+    while True:
+        try:
+            chunk = stream.read(8192)
+        except Exception:
+            break
+        if not chunk:
+            break
+
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
 def upload_archive(container):
 
-    resp = provider.upload_archive(container, request.stream)
+    try:
+        resp = provider.upload_archive(container, request.stream)
+    except Exception as e:
+        consume_request_body(request.stream)
+        raise e
 
     if resp.status_code >= 400:
+        consume_request_body(request.stream)
         abort(resp.status_code)
 
     mime_type = resp.headers['Content-Type']
