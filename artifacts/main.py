@@ -1,6 +1,8 @@
 import collections
 import io
+import logging
 import os
+import sys
 
 from providers import CloudFiles
 from flask import (abort,
@@ -17,6 +19,15 @@ app = Flask(__name__)
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 api_endpoint = os.getenv('RAX_ENDPOINT')
 provider = CloudFiles(api_endpoint, auth_url)
+
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+handler.setFormatter(formatter)
+root_logger = logging.getLogger()
+root_logger.addHandler(handler)
+
+logger = logging.getLogger('artifacts')
+logger.setLevel(logging.INFO)
 
 
 class PrefixMiddleware(object):
@@ -40,17 +51,19 @@ def consume_request_body(stream):
     while True:
         try:
             chunk = stream.read(8192)
-        except Exception:
+        except Exception as e:
+            logger.error(e)
             break
         if not chunk:
             break
 
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
 def upload_archive(container):
-
+    logger.info('starting upload on %s', container)
     try:
         resp = provider.upload_archive(container, request.stream)
-    except Exception:
+    except Exception as e:
+        logger.error(e)
         consume_request_body(request.stream)
         abort(500)
 
@@ -63,7 +76,7 @@ def upload_archive(container):
     def generate():
         for chunk in resp.iter_content(8192):
             yield chunk
-
+    logger.info('upload on %s done successfully', container)
     return Response(generate(), mimetype=mime_type)
 
 
@@ -93,7 +106,6 @@ def add_final_slash(container):
            methods=['GET'])
 @app.route("/builds/<container>/<path:filepath>", methods=['GET'])
 def displaycontent(container, filepath):
-
     if not filepath or filepath[-1] == '/':
         output_format = request.args.get('format')
 
@@ -110,6 +122,7 @@ def displaycontent(container, filepath):
             prefix=filepath,
             builds_url=url_for('displaycontent'))
     else:
+        logger.info('getting file %s on %s', filepath, container)
         resp = provider.headfile(container, filepath)
 
         if resp.status_code >= 400:
@@ -126,10 +139,11 @@ def displaycontent(container, filepath):
                     offset = nb_chunks_sent * chunk_size
                     resp = provider.getfile(container, filepath,
                                             offset=offset)
-                except:
+                except Exception as e:
                     if attempt < max_attempts:
                         continue
-                    raise
+                    logger.error(e)
+                    break
 
                 if resp.status_code >= 400:
                     abort(resp.status_code)
@@ -138,12 +152,14 @@ def displaycontent(container, filepath):
                     for chunk in resp.iter_content(chunk_size):
                         yield chunk
                         nb_chunks_sent += 1
-                except:
+                except Exception as e:
                     if attempt < max_attempts:
                         continue
-                    raise
+                    logger.error(e)
+                    break
 
                 break
+            logger.info('get request on file %s on %s finished', filepath, container)
 
         return Response(generate(), mimetype=mime_type)
 
