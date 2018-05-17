@@ -50,9 +50,9 @@ def upload_archive(container):
 
     try:
         resp = provider.upload_archive(container, request.stream)
-    except Exception as e:
+    except Exception:
         consume_request_body(request.stream)
-        raise e
+        abort(500)
 
     if resp.status_code >= 400:
         consume_request_body(request.stream)
