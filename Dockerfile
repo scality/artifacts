@@ -17,4 +17,8 @@ RUN sed -i -e 's/keepalive_timeout  65;/keepalive_timeout 240s;/g' /etc/nginx/ng
 
 RUN ln -s /dev/stdout /var/log/uwsgi.log
 
+RUN echo "buffer-size = 65535" >> /etc/uwsgi/uwsgi.ini
+
+# RUN echo "post-buffering = 65535" >> /etc/uwsgi/uwsgi.ini
+
 ENV NGINX_MAX_UPLOAD 8g
