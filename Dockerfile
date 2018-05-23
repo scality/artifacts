@@ -13,4 +13,6 @@ RUN cat /app/cache_settings.conf >> /etc/nginx/uwsgi_params
 # Setup nginx on debug mode
 RUN sed -i -e 's/warn/debug/g' /etc/nginx/nginx.conf
 
+RUN sed -i -e 's/keepalive_timeout  65;/keepalive_timeout 240s;/g' /etc/nginx/nginx.conf
+
 ENV NGINX_MAX_UPLOAD 8g
