@@ -15,4 +15,6 @@ RUN sed -i -e 's/warn/debug/g' /etc/nginx/nginx.conf
 
 RUN sed -i -e 's/keepalive_timeout  65;/keepalive_timeout 240s;/g' /etc/nginx/nginx.conf
 
+RUN ln -s /dev/stdout /var/log/uwsgi.log
+
 ENV NGINX_MAX_UPLOAD 8g
