@@ -1,0 +1,5 @@
+{
+  "tests/docker/test_container.py": true, 
+  "tests/system/test_main.py": true, 
+  "tests/unit/test_cloudfiles.py": true
+}

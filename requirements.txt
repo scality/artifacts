@@ -1,3 +1,5 @@
 requests
-moto[server]
 flask
+uwsgi
+
+

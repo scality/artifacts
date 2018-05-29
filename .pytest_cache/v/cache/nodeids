@@ -1,0 +1,3 @@
+[
+  "tests/util/stream/test_archive_stream.py::ArchiveStreamTestCase::test_streamed_archive"
+]

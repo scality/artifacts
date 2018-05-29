@@ -273,4 +273,7 @@ if __name__ == "__main__":
     assert 'RAX_LOGIN' in os.environ
     assert 'RAX_PWD' in os.environ
     assert 'RAX_ENDPOINT' in os.environ
-    app.run(host='0.0.0.0', debug=True, port=50000)
+
+#    http_server = WSGIServer(('', 50000), app)
+#    http_server.serve_forever()
+    app.run(host='0.0.0.0', debug=True, port=50000, threaded=True)
