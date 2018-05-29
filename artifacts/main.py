@@ -3,6 +3,8 @@ import io
 import logging
 import os
 import sys
+import traceback
+
 
 from providers import CloudFiles
 from flask import (abort,
@@ -15,6 +17,7 @@ from flask import (abort,
                    url_for)
 app = Flask(__name__)
 
+app.debug = True
 
 auth_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
 api_endpoint = os.getenv('RAX_ENDPOINT')
@@ -48,13 +51,11 @@ app.wsgi_app = PrefixMiddleware(app.wsgi_app)
 
 
 def consume_request_body(stream):
-    while True:
+    while not stream.is_exhausted:
         try:
             chunk = stream.read(8192)
         except Exception as e:
             logger.error(e)
-            break
-        if not chunk:
             break
 
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
@@ -64,10 +65,15 @@ def upload_archive(container):
         resp = provider.upload_archive(container, request.stream)
     except Exception as e:
         logger.error(e)
+        logger.error(type(e))
         consume_request_body(request.stream)
-        abort(500)
+        traceback.print_exc(file=sys.stdout)
+        traceback.print_exc()
+        traceback.print_stack()
+        raise e       
 
     if resp.status_code >= 400:
+        logger.error('Request body: %s', resp.content)
         consume_request_body(request.stream)
         abort(resp.status_code)
 
