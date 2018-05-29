@@ -18,11 +18,10 @@ class CloudFiles():
         auth_token = self.authenticate()
 
         def feed():
-            while True:
+            while not fileobj.is_exhausted:
                 chunk = fileobj.read(8192)
-                if not chunk:
-                    break
-                yield chunk
+                if chunk:
+                    yield chunk
 
         resp = requests.put(f'{self.url}/{container}',
                             data=feed(),

@@ -48,13 +48,11 @@ app.wsgi_app = PrefixMiddleware(app.wsgi_app)
 
 
 def consume_request_body(stream):
-    while True:
+    while not stream.is_exhausted:
         try:
             chunk = stream.read(8192)
         except Exception as e:
             logger.error(e)
-            break
-        if not chunk:
             break
 
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
