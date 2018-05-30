@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: upload
+    run: upload
+  name: upload
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: upload
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        run: upload
+    spec:
+      containers:
+      - image: gcr.io/eve-dev-174712/test-thomas:upload
+        imagePullPolicy: Always
+        name: upload
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
