@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: uwsgitop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: uwsgitop
+  template:
+    metadata:
+      labels:
+        run: uwsgitop
+    spec:
+      containers:
+      - image: gcr.io/eve-dev-174712/uwsgitop:1.0
+        imagePullPolicy: Always
+        name: uwsgitop
