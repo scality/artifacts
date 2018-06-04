@@ -4,7 +4,7 @@ URL="http://artifacts/builds/bitbucket:scality:ring:promoted-7.4.0.0/repo/centos
 
 
 while true; do
-    curl -vvv --output /dev/null $URL
+    curl --trace-ascii - --output /dev/null $URL
     if [ $? != 0 ]; then
         echo 'FAILURE'
     fi
