@@ -10,5 +10,5 @@ RUN cp /app/cache.conf /etc/nginx/conf.d/cache.conf
 RUN cp /app/uwsgi.ini /etc/uwsgi/uwsgi.ini
 RUN cat /app/cache_settings.conf >> /etc/nginx/uwsgi_params
 
-ENV NGINX_WORKER_PROCESSES 4
+ENV NGINX_WORKER_PROCESSES 1
 ENV NGINX_MAX_UPLOAD 8g
