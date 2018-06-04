@@ -4,7 +4,7 @@
 
 ```shell
 # build and push your image into the registry
-$ docker build . -t download:latest && docker tag download:latest gcr.io/eve-dev-174712/test-thomas:download && docker push gcr.io/eve-dev-174712/test-thomas:download
+$ docker build . -t gcr.io/eve-dev-174712/artifacts-test:1.0 && docker push gcr.io/eve-dev-174712/artifacts-test:1.0
 ```
 
 This image has already been pushed into the registry as it follow, so you can execute the next command,

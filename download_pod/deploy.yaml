@@ -1,31 +1,18 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  labels:
-    app: download
-    run: download
-  name: download
+  name: dl-test
 spec:
   replicas: 20
   selector:
     matchLabels:
-      run: download
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
-    type: RollingUpdate
+      run: dl-test
   template:
     metadata:
       labels:
-        run: download
+        run: dl-test
     spec:
       containers:
-      - image: gcr.io/eve-dev-174712/test-thomas:download
+      - image: gcr.io/eve-dev-174712/artifacts-test:1.0
         imagePullPolicy: Always
-        name: download
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      terminationGracePeriodSeconds: 30
+        name: dl-test
