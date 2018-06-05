@@ -1,7 +1,14 @@
 FROM tiangolo/uwsgi-nginx-flask:python3.6
 
 RUN pip install --upgrade pip
-RUN pip install awscli requests
+RUN pip install awscli requests uwsgitop
+
+# patch entrypoint to limit nginx bandwidth
+# protect against changes in original with sha512 check
+COPY entrypoint_sha512 entrypoint_patch /
+RUN sha512sum -c /entrypoint_sha512
+RUN patch -t -p 0 -d / < /entrypoint_patch
+# end patch
 
 COPY ./artifacts /app
 
