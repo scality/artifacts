@@ -1,7 +1,7 @@
 FROM tiangolo/uwsgi-nginx-flask:python3.6
 
 RUN pip install --upgrade pip
-RUN pip install awscli requests
+RUN pip install awscli requests uwsgitop
 
 COPY ./artifacts /app
 
