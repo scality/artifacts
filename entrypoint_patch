@@ -1,18 +1,10 @@
 --- entrypoint.sh	2018-06-05 11:34:00.680937904 +0200
-+++ entrypoint.sh	2018-06-05 13:59:01.474979919 +0200
-@@ -18,9 +18,15 @@
- USE_LISTEN_PORT=${LISTEN_PORT:-80}
- 
- # Generate Nginx config first part using the environment variables
--echo "server {
-+echo "
-+  limit_conn_zone \$binary_remote_addr zone=ratelimit:1m;
-+
-+  server {
++++ entrypoint.sh	2018-06-06 13:37:20.117473960 +0200
+@@ -21,6 +21,8 @@
+ echo "server {
      listen ${USE_LISTEN_PORT};
      location / {
 +        limit_rate_after 1m;
-+        limit_conn ratelimit 1;
 +        limit_rate 20m;
          try_files \$uri @app;
      }
