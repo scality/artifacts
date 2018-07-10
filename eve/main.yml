@@ -1,0 +1,41 @@
+---
+version: 0.2
+
+branches:
+  default:
+    stage: pre-merge
+
+stages:
+  pre-merge:
+    worker:
+      type: kube_pod
+      path: eve/workers/pod.yml
+      images:
+        artifacts: "."
+        agressor: eve/workers/agressor
+    steps:
+    - Git: &git_pull
+        name: git pull
+        repourl: "%(prop:git_reference)s"
+        mode: full
+        method: clobber
+        retryFetch: true
+        haltOnFailure: true
+    - ShellCommand:
+        name: hello
+        command: echo hello
+    - ShellCommand:
+        name: upload a 100mb file
+        command: |
+          dd if=/dev/urandom of=100mb-file bs=1M count=100
+          tar -chvzf ../artifacts.tar.gz 100mb-file
+          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
+          curl localhost/builds/%(prop:artifacts_name)s/100mb-file > dl-100mb-file
+    - ShellCommand:
+        name: upload a 100mb file
+        command: |
+          %(prop:builddir)s/build/eve/workers/create-files.sh
+          tar -chvzf ../artifacts.tar.gz .
+          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
+          curl localhost/builds/%(prop:artifacts_name)s/4gb-file > dl-4gb-file
+        workdir: /workspace
