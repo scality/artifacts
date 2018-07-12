@@ -10,10 +10,10 @@ spec:
       resources:
         limits:
           cpu: "2"
-          memory: 2Gi
+          memory: 6Gi
         requests:
           cpu: "2"
-          memory: 2Gi
+          memory: 6Gi
       volumeMounts:
         - name: workspace
           mountPath: /workspace
@@ -22,10 +22,10 @@ spec:
       resources:
         limits:
           cpu: "2"
-          memory: 2Gi
+          memory: 1Gi
         requests:
           cpu: "2"
-          memory: 2Gi
+          memory: 1Gi
       env:
         - name: RAX_ENDPOINT
           value: "%(secret:rax_endpoint)s"
