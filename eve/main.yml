@@ -32,6 +32,24 @@ stages:
           curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
           curl localhost/builds/%(prop:artifacts_name)s/100mb-file > dl-100mb-file
     - ShellCommand:
+        name: create big file
+        command: |
+          mkdir big
+          cd big
+          dd if=/dev/zero of=data bs=1M count=3000
+    - SetPropertyFromCommand:
+        name: prop
+        property: sha1sum
+        command: sha1sum big/data
+
+    - ShellCommand:
+        name: upload
+        command: |
+          tar -chvzf ../artifacts.tar.gz big
+          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
+          curl localhost/builds/%(prop:artifacts_name)s/big/data > dl-data
+          sha1sum dl-data
+    - ShellCommand:
         name: upload a 100mb file
         command: |
           %(prop:builddir)s/build/eve/workers/create-files.sh
