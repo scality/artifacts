@@ -5,6 +5,14 @@ branches:
   default:
     stage: pre-merge
 
+models:
+  - ShellCommand: &artifacts-log
+      logfiles:
+        artifacts:
+          filename: artifacts.log
+          follow: true
+
+
 stages:
   pre-merge:
     worker:
@@ -21,39 +29,59 @@ stages:
         method: clobber
         retryFetch: true
         haltOnFailure: true
+
     - ShellCommand:
-        name: hello
-        command: echo hello
-    - ShellCommand:
-        name: upload a 100mb file
-        command: |
-          dd if=/dev/urandom of=100mb-file bs=1M count=100
-          tar -chvzf ../artifacts.tar.gz 100mb-file
-          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
-          curl localhost/builds/%(prop:artifacts_name)s/100mb-file > dl-100mb-file
-    - ShellCommand:
-        name: create big file
+        name: generate a big artifact
+        <<: *artifacts-log
         command: |
           mkdir big
           cd big
-          dd if=/dev/zero of=data bs=1M count=3000
-    - SetPropertyFromCommand:
-        name: prop
-        property: sha1sum
-        command: sha1sum big/data
-
+          dd if=/dev/urandom of=data bs=1M count=3000
+          sha1sum data > data.sha1
+        haltOnFailure: True
     - ShellCommand:
-        name: upload
+        name: upload big artifacts
+        <<: *artifacts-log
         command: |
-          tar -chvzf ../artifacts.tar.gz big
-          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
-          curl localhost/builds/%(prop:artifacts_name)s/big/data > dl-data
-          sha1sum dl-data
+          tar -chvzf ../artifacts.tar.gz big/data
+          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
     - ShellCommand:
-        name: upload a 100mb file
-        command: |
-          %(prop:builddir)s/build/eve/workers/create-files.sh
-          tar -chvzf ../artifacts.tar.gz .
-          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
-          curl localhost/builds/%(prop:artifacts_name)s/4gb-file > dl-4gb-file
-        workdir: /workspace
+        name: check downloads integrity under stress
+        <<: *artifacts-log
+        command: "./check_multiple_big_downloads.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/big/data"
+    # - ShellCommand:
+    #     name: hello
+    #     command: echo hello
+    # - ShellCommand:
+    #     name: upload a 100mb file
+    #     command: |
+    #       dd if=/dev/urandom of=100mb-file bs=1M count=100
+    #       tar -chvzf ../artifacts.tar.gz 100mb-file
+    #       curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
+    #       curl localhost/builds/%(prop:artifacts_name)s/100mb-file > dl-100mb-file
+    # - ShellCommand:
+    #     name: create big file
+    #     command: |
+    #       mkdir big
+    #       cd big
+    #       dd if=/dev/zero of=data bs=1M count=3000
+    # - SetPropertyFromCommand:
+    #     name: prop
+    #     property: sha1sum
+    #     command: sha1sum big/data
+    #
+    # - ShellCommand:
+    #     name: upload
+    #     command: |
+    #       tar -chvzf ../artifacts.tar.gz big
+    #       curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
+    #       curl localhost/builds/%(prop:artifacts_name)s/big/data > dl-data
+    #       sha1sum dl-data
+    # - ShellCommand:
+    #     name: upload a 100mb file
+    #     command: |
+    #       %(prop:builddir)s/build/eve/workers/create-files.sh
+    #       tar -chvzf ../artifacts.tar.gz .
+    #       curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT localhost/upload/%(prop:artifacts_name)s
+    #       curl localhost/builds/%(prop:artifacts_name)s/4gb-file > dl-4gb-file
+    #     workdir: /workspace

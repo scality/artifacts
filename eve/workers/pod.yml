@@ -10,22 +10,23 @@ spec:
       resources:
         limits:
           cpu: "2"
-          memory: 6Gi
+          memory: 4Gi
         requests:
           cpu: "2"
-          memory: 6Gi
+          memory: 4Gi
       volumeMounts:
         - name: workspace
-          mountPath: /workspace
+          mountPath: '%(prop:builddir)s/build'
     - name: artifacts
       image: "{{ images.artifacts }}"
       resources:
         limits:
           cpu: "2"
-          memory: 1Gi
+          memory: 4Gi
         requests:
           cpu: "2"
-          memory: 1Gi
+          memory: 4Gi
+      # command: ['/start.sh', '|', 'tee', '-a', '/workspace/artifacts.log']
       env:
         - name: RAX_ENDPOINT
           value: "%(secret:rax_endpoint)s"
@@ -34,6 +35,8 @@ spec:
         - name: RAX_LOGIN
           value: "%(secret:rax_login)s"
       volumeMounts:
+        - name: workspace
+          mountPath: /workspace
         - name: cache
           mountPath: /data/nginx
   volumes:
