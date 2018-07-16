@@ -9,24 +9,26 @@ spec:
       image: "{{ images.agressor }}"
       resources:
         limits:
-          cpu: "2"
+          cpu: "1"
           memory: 4Gi
         requests:
-          cpu: "2"
+          cpu: "500m"
           memory: 4Gi
       volumeMounts:
         - name: workspace
           mountPath: '%(prop:builddir)s/build'
+        - name: logs
+          mountPath: /logs
     - name: artifacts
       image: "{{ images.artifacts }}"
       resources:
         limits:
-          cpu: "2"
-          memory: 4Gi
+          cpu: "1"
+          memory: 1Gi
         requests:
-          cpu: "2"
-          memory: 4Gi
-      # command: ['/start.sh', '|', 'tee', '-a', '/workspace/artifacts.log']
+          cpu: "500m"
+          memory: 1Gi
+      command: ['/bin/sh', '-c', 'python main.py 2>&1 | tee -a /logs/artifacts.log']
       env:
         - name: RAX_ENDPOINT
           value: "%(secret:rax_endpoint)s"
@@ -35,12 +37,27 @@ spec:
         - name: RAX_LOGIN
           value: "%(secret:rax_login)s"
       volumeMounts:
-        - name: workspace
-          mountPath: /workspace
+        - name: logs
+          mountPath: /logs
+    - name: proxy-cache
+      image: "{{ images.cache }}"
+      command: ['/bin/sh', '-c', 'nginx -g "daemon off;" 2>&1 | tee -a /logs/proxy-cache.log']
+      resources:
+        limits:
+          cpu: "1"
+          memory: 3Gi
+        requests:
+          cpu: "500m"
+          memory: 3Gi
+      volumeMounts:
         - name: cache
           mountPath: /data/nginx
+        - name: logs
+          mountPath: /logs
   volumes:
     - name: cache
       emptyDir: {}
     - name: workspace
+      emptyDir: {}
+    - name: logs
       emptyDir: {}
