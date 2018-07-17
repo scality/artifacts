@@ -41,7 +41,7 @@ spec:
           mountPath: /logs
     - name: proxy-cache
       image: "{{ images.cache }}"
-      command: ['/bin/sh', '-c', 'nginx -g "daemon off;" 2>&1 | tee -a /logs/proxy-cache.log']
+      command: ["/bin/sh", "-c", "envsubst '${NGINX_LISTEN_PORT} ${ARTIFACTS_HOST}' < /etc/nginx/conf.d/artifacts.conf.template > /etc/nginx/conf.d/default.conf && cat /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
       resources:
         limits:
           cpu: "1"
@@ -53,7 +53,7 @@ spec:
         - name: cache
           mountPath: /data/nginx
         - name: logs
-          mountPath: /logs
+          mountPath: /logs/
   volumes:
     - name: cache
       emptyDir: {}
