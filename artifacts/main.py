@@ -13,6 +13,7 @@ from flask import (abort,
                    redirect,
                    render_template,
                    url_for)
+from flup.server.fcgi import WSGIServer
 app = Flask(__name__)
 
 
@@ -273,4 +274,11 @@ if __name__ == "__main__":
     assert 'RAX_LOGIN' in os.environ
     assert 'RAX_PWD' in os.environ
     assert 'RAX_ENDPOINT' in os.environ
-    app.run(host='0.0.0.0', debug=True, port=50000)
+
+    WSGIServer(
+        app,
+        bindAddress=('0.0.0.0', 50000),
+        debug=True,
+        multiprocess=True,
+        multithreaded=True,
+    ).run()

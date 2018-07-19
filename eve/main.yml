@@ -1,0 +1,53 @@
+---
+version: 0.2
+
+branches:
+  default:
+    stage: pre-merge
+
+models:
+  - ShellCommand: &artifacts-log
+      logfiles:
+        artifacts:
+          filename: /logs/artifacts.log
+          follow: true
+        proxy-cache:
+          filename: /logs/proxy-cache.log
+          follow: true
+
+stages:
+  pre-merge:
+    worker:
+      type: kube_pod
+      path: eve/workers/pod.yml
+      images:
+        artifacts: "."
+        agressor: eve/workers/agressor
+        cache: proxy-cache
+    steps:
+    - Git: &git_pull
+        name: git pull
+        repourl: "%(prop:git_reference)s"
+        mode: full
+        method: clobber
+        retryFetch: true
+        haltOnFailure: true
+    - ShellCommand:
+        name: generate a big artifact
+        <<: *artifacts-log
+        command: |
+          mkdir big
+          cd big
+          dd if=/dev/urandom of=data bs=1M count=3000
+          sha1sum data > data.sha1
+        haltOnFailure: True
+    - ShellCommand:
+        name: upload big artifacts
+        <<: *artifacts-log
+        command: |
+          tar -chvzf ../artifacts.tar.gz big/data
+          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
+    - ShellCommand:
+        name: check downloads integrity under stress
+        <<: *artifacts-log
+        command: "./check_multiple_big_downloads.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/big/data"
