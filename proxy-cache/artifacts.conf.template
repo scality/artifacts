@@ -53,6 +53,10 @@ server {
     if ($request_uri ~ ^/last_failure/.*$) {
         set $no_cache "1";
     }
+
+    # .related_artifacts contains empty objects that refer to other artifacts
+    rewrite ^/builds/[^/]+/\.related_artifacts/(.+)$ $http_script_name/builds/$1 permanent;
+
     try_files $uri $uri/ @artifacts;
   }
 }
