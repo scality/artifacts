@@ -16,6 +16,15 @@ models:
           follow: true
 
 stages:
+  test-context:
+    worker:
+      type: docker
+      path: '.'
+      dockerfile: eve/workers/agressor
+    steps:
+      - ShellCommand:
+          name: hello world
+          command: echo "hello world"
   pre-merge:
     worker:
       type: kube_pod
@@ -32,6 +41,11 @@ stages:
         method: clobber
         retryFetch: true
         haltOnFailure: true
+    - TriggerStages:
+        name: trigger stage
+        stage_names:
+          - test-context
+    
     - ShellCommand:
         name: generate a big artifact
         <<: *artifacts-log
