@@ -33,6 +33,17 @@ stages:
         retryFetch: true
         haltOnFailure: true
     - ShellCommand:
+        name: give some time to artifact service to wake-up
+        command: "sleep 10"
+    - ShellCommand:
+        name: check download of non-existent container
+        <<: *artifacts-log
+        command: "./check_non_existent_download.sh http://127.0.0.1/builds/this_container_does_not_exist/"
+    - ShellCommand:
+        name: check download of non-existent object
+        <<: *artifacts-log
+        command: "./check_non_existent_download.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/this_object_does_not_exist"
+    - ShellCommand:
         name: generate a big artifact
         <<: *artifacts-log
         command: |
