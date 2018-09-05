@@ -110,7 +110,11 @@ def displaycontent(container, filepath):
     if not filepath or filepath[-1] == '/':
         output_format = request.args.get('format')
 
+        logger.info('getting listing on %s', container)
         resp = provider.listfiles(container, filepath, output_format)
+
+        if resp.status_code >= 400:
+            abort(resp.status_code)
 
         if output_format != "txt":
             template_file = 'listing.html'
