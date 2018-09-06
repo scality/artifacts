@@ -135,6 +135,9 @@ def displaycontent(container, filepath):
 
         mime_type = resp.headers['Content-Type']
 
+        if int(resp.headers['Content-Length']) == 0:
+            return Response('', mimetype=mime_type)
+
         def generate():
             chunk_size = 8192
             nb_chunks_sent = 0
