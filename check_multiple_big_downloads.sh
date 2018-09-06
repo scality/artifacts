@@ -5,6 +5,7 @@ port=$(echo $full_url | cut -d/ -f3 | cut -d: -f2)
 uri=/$(echo $full_url | cut -d/ -f4-)
 [ "$host" != "$port" ] || port="80"
 echo $host $port $uri
+rm -fr download
 mkdir download
 cd download
 # try to mess the uwsgi cache with concurrent interrupted GET operations while downloading the data

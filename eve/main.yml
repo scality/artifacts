@@ -10,10 +10,10 @@ models:
       logfiles:
         artifacts:
           filename: /logs/artifacts.log
-          follow: true
+          follow: false
         proxy-cache:
           filename: /logs/proxy-cache.log
-          follow: true
+          follow: false
 
 stages:
   pre-merge:
@@ -34,7 +34,11 @@ stages:
         haltOnFailure: true
     - ShellCommand:
         name: give some time to artifact service to wake-up
-        command: "sleep 10"
+        command: |
+          while [ ! -f /logs/artifacts.log ] || [ ! -f /logs/proxy-cache.log ]
+          do
+             sleep 1
+          done
     - ShellCommand:
         name: check download of non-existent container
         <<: *artifacts-log
@@ -43,6 +47,43 @@ stages:
         name: check download of non-existent object
         <<: *artifacts-log
         command: "./check_non_existent_download.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/this_object_does_not_exist"
+    - ShellCommand:
+        name: generate an empty artifact
+        <<: *artifacts-log
+        command: |
+          mkdir empty
+          cd empty
+          touch data
+        haltOnFailure: True
+    - ShellCommand:
+        name: upload empty artifact
+        <<: *artifacts-log
+        command: |
+          tar -chvzf artifacts.tar.gz empty/data
+          curl --verbose --max-time 3600 -s -T artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
+    - ShellCommand:
+        name: check download of emtpy object
+        <<: *artifacts-log
+        command: "./check_empty_download.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/empty/data"
+    - ShellCommand:
+        name: generate an artifact with chunk_size len
+        <<: *artifacts-log
+        command: |
+          mkdir chunk_size
+          cd chunk_size
+          dd if=/dev/urandom of=data bs=8192 count=1
+          sha1sum data > data.sha1
+        haltOnFailure: True
+    - ShellCommand:
+        name: upload artifact with chunk_size len
+        <<: *artifacts-log
+        command: |
+          tar -chvzf artifacts.tar.gz chunk_size/data
+          curl --verbose --max-time 3600 -s -T artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
+    - ShellCommand:
+        name: check download of object with chunk_size len
+        <<: *artifacts-log
+        command: "./check_chunk_size_download.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/chunk_size/data"
     - ShellCommand:
         name: generate a big artifact
         <<: *artifacts-log
@@ -53,11 +94,11 @@ stages:
           sha1sum data > data.sha1
         haltOnFailure: True
     - ShellCommand:
-        name: upload big artifacts
+        name: upload big artifact
         <<: *artifacts-log
         command: |
-          tar -chvzf ../artifacts.tar.gz big/data
-          curl --verbose --max-time 3600 -s -T ../artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
+          tar -chvzf artifacts.tar.gz big/data
+          curl --verbose --max-time 3600 -s -T artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
     - ShellCommand:
         name: check downloads integrity under stress
         <<: *artifacts-log
