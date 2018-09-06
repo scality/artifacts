@@ -66,6 +66,25 @@ stages:
         <<: *artifacts-log
         command: "./check_empty_download.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/empty/data"
     - ShellCommand:
+        name: generate an artifact with chunk_size len
+        <<: *artifacts-log
+        command: |
+          mkdir chunk_size
+          cd chunk_size
+          dd if=/dev/urandom of=data bs=8192 count=1
+          sha1sum data > data.sha1
+        haltOnFailure: True
+    - ShellCommand:
+        name: upload artifact with chunk_size len
+        <<: *artifacts-log
+        command: |
+          tar -chvzf artifacts.tar.gz chunk_size/data
+          curl --verbose --max-time 3600 -s -T artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s
+    - ShellCommand:
+        name: check download of object with chunk_size len
+        <<: *artifacts-log
+        command: "./check_chunk_size_download.sh http://127.0.0.1/builds/%(prop:artifacts_name)s/chunk_size/data"
+    - ShellCommand:
         name: generate a big artifact
         <<: *artifacts-log
         command: |
