@@ -98,7 +98,7 @@ stages:
         <<: *artifacts-log
         command: |
           tar -chvzf artifacts.tar.gz big/data
-          curl --verbose --max-time 3600 -s -T artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s --progress-bar > /dev/null
+          curl ---progress-bar --verbose --max-time 3600 -T artifacts.tar.gz -X PUT 127.0.0.1/upload/%(prop:artifacts_name)s | tee /dev/null
     - ShellCommand:
         name: check downloads integrity under stress
         <<: *artifacts-log
