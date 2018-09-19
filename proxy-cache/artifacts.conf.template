@@ -1,23 +1,25 @@
 fastcgi_cache_path /data/nginx/artifacts levels=1:2 keys_zone=artifacts:10m inactive=1d
                  max_size=32g use_temp_path=off;
 
+fastcgi_cache_path /data/nginx/internals levels=1:2 keys_zone=internals:10m inactive=1d
+                 max_size=32m use_temp_path=off;
+
 server {
   listen ${NGINX_LISTEN_PORT} default_server;
 
   client_max_body_size 8g;
 
-  # cache configuration.
-  fastcgi_cache artifacts;
-  fastcgi_cache_key $request_uri;
-  fastcgi_cache_methods GET;
-  fastcgi_ignore_headers Cache-Control;
-  error_page 404 = @artifacts;
-  set $no_cache "0";
-
   limit_rate 20m;
 
+  set $no_cache "0";
+  set $cache_bypass "0";
 
-  location @artifacts {
+  location @internals {
+    fastcgi_cache internals;
+    fastcgi_cache_key $request_uri;
+    fastcgi_cache_methods GET;
+    fastcgi_ignore_headers Cache-Control;
+
     include fastcgi_params;
 
     # setting up proxy buffering to avoid OOM on huge uploads.
@@ -25,6 +27,31 @@ server {
 
     # Additional cache config
     fastcgi_no_cache $no_cache;
+    fastcgi_cache_bypass $cache_bypass;
+    fastcgi_cache_valid 200 1d;
+    fastcgi_cache_valid 404 1d;
+
+    # fastcgi config
+    fastcgi_read_timeout 900s;
+    fastcgi_param PATH_INFO $fastcgi_script_name;
+    fastcgi_param SCRIPT_NAME "";
+    fastcgi_pass ${ARTIFACTS_HOST};
+  }
+
+  location @artifacts {
+    fastcgi_cache artifacts;
+    fastcgi_cache_key $request_uri;
+    fastcgi_cache_methods GET;
+    fastcgi_ignore_headers Cache-Control;
+
+    include fastcgi_params;
+
+    # setting up proxy buffering to avoid OOM on huge uploads.
+    fastcgi_request_buffering off;
+
+    # Additional cache config
+    fastcgi_no_cache $no_cache;
+    fastcgi_cache_bypass $cache_bypass;
     fastcgi_cache_valid 200 1d;
 
     # fastcgi config
@@ -34,29 +61,53 @@ server {
     fastcgi_pass ${ARTIFACTS_HOST};
   }
 
-  location / {
+  location ~ ^/builds/[^/]+/.artifacts_no_expiration$ {
+    if ($http_forcecacheupdate) {
+        set $cache_bypass "1";
+    }
+
+    error_page 404 = @internals;
+    try_files $uri @internals;
+  }
+
+  location ~ ^/(disable_expiration|enable_expiration)/.*$ {
+    set $no_cache "1";
+    set $cache_bypass "1";
+
+    error_page 404 = @internals;
+    try_files $uri @internals;
+  }
+
+  location ~ ^/healthz/.*$ {
+    set $no_cache "1";
+    set $cache_bypass "1";
+
+    error_page 404 = @internals;
+    try_files $uri @internals;
+  }
+
+  location ~ ^/(latest|last_success|last_failure)/.*$ {
+    set $no_cache "1";
+    set $cache_bypass "1";
+
+    error_page 404 = @internals;
+    try_files $uri @internals;
+  }
+
+  location ~ ^/ {
+    if ($http_forcecacheupdate) {
+        set $cache_bypass "1";
+    }
+
     if ($request_uri ~ ^.*/$) {
         set $no_cache "1";
-    }
-
-    if ($request_uri ~ ^/healthz/.*$) {
-        set $no_cache "1";
-    }
-
-    # Bypass cache for /latest/ /last_success/ and /last_failure/
-    if ($request_uri ~ ^/latest/.*$) {
-        set $no_cache "1";
-    }
-    if ($request_uri ~ ^/last_success/.*$) {
-        set $no_cache "1";
-    }
-    if ($request_uri ~ ^/last_failure/.*$) {
-        set $no_cache "1";
+        set $cache_bypass "1";
     }
 
     # .related_artifacts contains empty objects that refer to other artifacts
     rewrite ^/builds/[^/]+/\.related_artifacts/(.+)$ $http_script_name/builds/$1 permanent;
 
-    try_files $uri $uri/ @artifacts;
+    error_page 404 = @artifacts;
+    try_files $uri @artifacts;
   }
 }
