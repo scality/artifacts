@@ -104,6 +104,10 @@ server {
         set $cache_bypass "1";
     }
 
+    # deal with /builds and /builds/container missing trailing slash
+    rewrite ^/builds$ $http_script_name/builds/ permanent;
+    rewrite ^/builds/([^/]+)$ $http_script_name/builds/$1/ permanent;
+
     # .related_artifacts contains empty objects that refer to other artifacts
     rewrite ^/builds/[^/]+/\.related_artifacts/(.+)$ $http_script_name/builds/$1 permanent;
 
