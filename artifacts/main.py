@@ -188,6 +188,23 @@ def delete_container(container):
     return resp.content
 
 
+@app.route("/enable_expiration/<container>", methods=['GET'])
+def enable_expiration(container):
+
+    resp = provider.delete_object(container, '.artifacts_no_expiration')
+
+    return resp.content
+
+
+@app.route("/disable_expiration/<container>", methods=['GET'])
+def disable_expiration(container):
+    reason = request.args.get('reason')
+
+    resp = provider.put_object(container, '.artifacts_no_expiration', reason)
+
+    return resp.content
+
+
 def find_container(provider, prefix, condition=''):
     if condition not in ['SUCCESSFUL', 'FAILED', '']:
         raise Exception('invalid condition (%s)' % condition)

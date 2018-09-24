@@ -6,6 +6,8 @@
 <!-- Optional theme -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
+
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 <style>
@@ -15,7 +17,11 @@
 .icon-failure {
     color: #D9534F;
 }
+.icon-hide {
+    color: transparent;
+}
 </style>
+<meta charset="UTF-8"/>
 <script>
 function display_directory_navigation() {
     var show_dir = false;
@@ -25,7 +31,7 @@ function display_directory_navigation() {
     for (i=1; i<dirs.length-2; i++) {
         if (!show_dir) {
             if (dirs[i] == "builds") {
-                show_dir = true
+                show_dir = true;
             }
         }
         if (show_dir) {
@@ -35,32 +41,82 @@ function display_directory_navigation() {
     cdir += dirs[dirs.length-2];
     document.getElementById("div_navigation").innerHTML = cdir;
 }
-function wait_build_status() {
-    document.getElementById("div_status").innerHTML = '<span class="glyphicon glyphicon-minus"></span>&nbsp;';
-}
 function display_build_status() {
     var container = window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}([^\/]+)\//)[1];
     var file = new XMLHttpRequest();
     file.onreadystatechange = function() {
         if (file.readyState == 4) {
             if (file.status == 200) {
-                var dynamic_content = ''
-                var iconColor = ''
-                var iconShape = ' glyphicon-remove'
+                var iconColor = '';
+                var iconShape = ' glyphicon-minus';
                 if (file.responseText == 'SUCCESSFUL') {
-                    iconColor = ' icon-success'
-                    iconShape = ' glyphicon-ok'
+                    iconColor = ' icon-success';
+                    iconShape = ' glyphicon-ok';
                 }
                 if (file.responseText == 'FAILED') {
-                    iconColor = ' icon-failure'
-                    iconShape = ' glyphicon-remove'
+                    iconColor = ' icon-failure';
+                    iconShape = ' glyphicon-remove';
                 }
-                dynamic_content = '<span class="glyphicon' + iconShape + iconColor + ' "></span>&nbsp;';
-                document.getElementById("div_status").innerHTML = dynamic_content;
+                document.getElementById("div_build_status").innerHTML = '<span class="glyphicon' + iconShape + iconColor + '"></span>';
             }
         }
     };
     file.open("GET", "{{ builds_url }}" + container + "/.final_status", true);
+    file.send();
+}
+function disable_expiration() {
+    var container = window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}([^\/]+)\//)[1];
+    var reason = document.getElementById("reason_value").value;
+
+    var file = new XMLHttpRequest();
+    file.onreadystatechange = function() {
+        if (file.readyState == 4) {
+            display_expire_status(true);
+        }
+    }
+    file.open("GET", "{{ builds_url|replace('/builds/', '/disable_expiration/') }}" + container + "?reason=" + encodeURIComponent(reason), true);
+    file.send();
+}
+function enable_expiration() {
+    var container = window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}([^\/]+)\//)[1];
+
+    var file = new XMLHttpRequest();
+    file.onreadystatechange = function() {
+        if (file.readyState == 4) {
+            display_expire_status(true);
+	}
+    }
+    file.open("GET", "{{ builds_url|replace('/builds/', '/enable_expiration/') }}" + container, true);
+    file.send();
+}
+function display_expire_status(refresh) {
+    var container = window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}([^\/]+)\//)[1];
+
+    // skip promoted build
+    if (container.indexOf('promoted-') != -1) {
+        return;
+    }
+
+    // process staging build
+    var file = new XMLHttpRequest();
+    file.onreadystatechange = function() {
+        if (file.readyState == 4) {
+	    if (file.status == 200) {
+                document.getElementById("div_expire_status").innerHTML = '<span class="glyphicon glyphicon-lock" title="' + file.responseText + '"></span>';
+	        document.getElementById("div_expire").innerHTML = '<button type="button" class="btn btn-primary" style="width:140px" data-toggle="modal" data-target="#enableExpirationDialog">Enable Expiration</button>';
+	    }
+	    if (file.status == 404) {
+		document.getElementById("div_expire_status").innerHTML = '<span class="glyphicon glyphicon-lock icon-hide"></span>';
+		document.getElementById("div_expire").innerHTML = '<button type="button" class="btn btn-primary" style="width:140px" data-toggle="modal" data-target="#disableExpirationDialog">Disable Expiration</button>';
+	    }
+	}
+    };
+    file.open("GET", "{{ builds_url }}" + container + "/.artifacts_no_expiration", true);
+
+    if (refresh) {
+        file.setRequestHeader("ForceCacheUpdate", "yes");
+    }
+
     file.send();
 }
 </script>
@@ -69,10 +125,73 @@ function display_build_status() {
 <body>
 
 <div class="page-header">
-<h1>Artifacts</h1>
-<br><br>
-<span id="div_status">&nbsp;</span><span id="div_navigation">&nbsp;</span>
+  <h1>&nbsp;Artifacts</h1>
+  <table width="100%" height="70" border="0">
+    <tr>
+      <td align="left">
+        &nbsp;&nbsp;
+	<span id="div_expire_status"><span class="glyphicon glyphicon-minus icon-hide"></span></span>&nbsp;
+	<span id="div_build_status"><span class="glyphicon glyphicon-minus icon-hide"></span></span>&nbsp;
+	<span id="div_navigation"></span>
+      </td>
+      <td align="right">
+	<span id="div_expire"></span>&nbsp;&nbsp;
+      </td>
+    </tr>
+  </table>
 </div>
+
+
+<div class="container">
+  <div class="modal fade" id="enableExpirationDialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- header -->
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h3 class="modal-title">Enable Expiration</h3>
+        </div>
+        <!-- body -->
+        <div class="modal-body">
+	  Enabling expiration will make this build visible to the expiration process again.
+	</div>
+	<!-- footer -->
+	<div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="enable_expiration()">enable expiration</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="container">
+  <div class="modal fade" id="disableExpirationDialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- header -->
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h3 class="modal-title">Disable Expiration</h3>
+        </div>
+	<!-- body -->
+	<div class="modal-body">
+          Disabling expiration will hide this build from the expiration process until you enable expiration again. Please, fill the reason why you want to disable expiration for this build:<br><br>
+          <form role="form" accept-charset="UTF-8">
+            <div class="form-group">
+              <input type="text" class="form-control" placeholder="reason" id="reason_value"/>
+            </div>
+          </form>
+        </div>
+        <!-- footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="disable_expiration()">Disable expiration</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <ul class="list-group">
 
@@ -103,5 +222,5 @@ function display_build_status() {
 </ul>
 </body>
 
-<script>if (window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}[^\/]+\//)) {wait_build_status(); display_directory_navigation(); display_build_status();}</script>
+<script>if (window.location.pathname.match(/^{{ builds_url|replace('/', '\/') }}[^\/]+\//)) {display_directory_navigation(); display_build_status(); display_expire_status(false);}</script>
 </html>

@@ -53,6 +53,17 @@ class CloudFiles():
 
         return resp
 
+    def put_object(self, container, filepath, content):
+
+        auth_token = self.authenticate()
+
+        resp = requests.put(f'{self.url}/{container}/{filepath}',
+                            data=f'{content}'.encode('utf-8'),
+                            headers={'X-Auth-Token': auth_token},
+                            stream=True)
+
+        return resp
+
     def delete_object(self, container, filepath):
 
         auth_token = self.authenticate()
