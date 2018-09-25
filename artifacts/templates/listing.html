@@ -23,6 +23,17 @@
 </style>
 <meta charset="UTF-8"/>
 <script>
+function sanitize_content(content) {
+    var new_content = content;
+
+    new_content.replace(/&/g, '&amp;');
+    new_content.replace(/</g, '&lt;');
+    new_content.replace(/>/g, '&gt;');
+    new_content.replace(/"/g, '&quot;');
+    new_content.replace(/'/g, '&#39;');
+
+    return new_content;
+}
 function display_directory_navigation() {
     var show_dir = false;
     var dirs = window.location.pathname.split('/');
@@ -102,11 +113,13 @@ function display_expire_status(refresh) {
     file.onreadystatechange = function() {
         if (file.readyState == 4) {
 	    if (file.status == 200) {
-                document.getElementById("div_expire_status").innerHTML = '<span class="glyphicon glyphicon-lock" title="' + file.responseText + '"></span>';
-	        document.getElementById("div_expire").innerHTML = '<button type="button" class="btn btn-primary" style="width:140px" data-toggle="modal" data-target="#enableExpirationDialog">Enable Expiration</button>';
+                document.getElementById("div_expire_status").innerHTML = '<span class="glyphicon glyphicon-lock"></span>';
+                document.getElementById("div_expire_status").title= sanitize_content(file.responseText);
+                document.getElementById("show_reason").innerText = sanitize_content(file.responseText);
+                document.getElementById("div_expire").innerHTML = '<button type="button" class="btn btn-primary" style="width:140px" data-toggle="modal" data-target="#enableExpirationDialog">Enable Expiration</button>';
 	    }
 	    if (file.status == 404) {
-		document.getElementById("div_expire_status").innerHTML = '<span class="glyphicon glyphicon-lock icon-hide"></span>';
+		document.getElementById("div_expire_status").innerHTML = '<span class="glyphicon glyphicon-lock icon-hide" title=""></span>';
 		document.getElementById("div_expire").innerHTML = '<button type="button" class="btn btn-primary" style="width:140px" data-toggle="modal" data-target="#disableExpirationDialog">Disable Expiration</button>';
 	    }
 	}
@@ -153,7 +166,9 @@ function display_expire_status(refresh) {
         </div>
         <!-- body -->
         <div class="modal-body">
-	  Enabling expiration will make this build visible to the expiration process again.
+          Expiration for this build has been disabled previously with the following reason:<br>
+          "<i><span id="show_reason"></span></i>"<br><br>
+          Re-enabling expiration will make this build visible to the expiration process again.
 	</div>
 	<!-- footer -->
 	<div class="modal-footer">
@@ -179,7 +194,7 @@ function display_expire_status(refresh) {
           Disabling expiration will hide this build from the expiration process until you enable expiration again. Please, fill the reason why you want to disable expiration for this build:<br><br>
           <form role="form" accept-charset="UTF-8">
             <div class="form-group">
-              <input type="text" class="form-control" placeholder="reason" id="reason_value"/>
+              <input type="text" class="form-control" placeholder="my name / ticket / reason" id="reason_value"/>
             </div>
           </form>
         </div>
