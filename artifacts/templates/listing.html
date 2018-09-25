@@ -210,7 +210,6 @@ function display_expire_status(refresh) {
 
 <ul class="list-group">
 
-
 {% for entry in entries %}
   {% if 'subdir' in entry %}
     {% set link = entry.subdir[:-1].split('/')[-1] + '/' %}
@@ -218,7 +217,7 @@ function display_expire_status(refresh) {
   {% if 'name' in entry %}
     {% set link = entry.name.split('/')[-1] %}
   {% endif %}
-  {% if not 'count' in entry or entry.name.startswith("bitbucket:scality:") or entry.name.startswith("github:scality:") %}
+  {% if not 'count' in entry or entry.name.startswith(container_filter) %}
     <li class="list-group-item">
     <span class="glyphicon glyphicon-folder-open" aria-hidden="true">&nbsp;</span><a href="./{{ link }}">{{ link }}</a>
     {% if 'count' in entry %}
