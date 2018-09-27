@@ -1,6 +1,7 @@
 import collections
 import io
 import logging
+import re
 import os
 import sys
 
@@ -45,6 +46,7 @@ class PrefixMiddleware(object):
         environ['SCRIPT_NAME'] = environ.get('HTTP_SCRIPT_NAME', '')
         return self.app(environ, start_response)
 
+
 app.wsgi_app = PrefixMiddleware(app.wsgi_app)
 
 
@@ -57,6 +59,7 @@ def consume_request_body(stream):
             break
         if not chunk:
             break
+
 
 @app.route("/upload/<container>", methods=['PUT'], strict_slashes=False)
 def upload_archive(container):
@@ -121,10 +124,17 @@ def displaycontent(container, filepath):
         else:
             template_file = 'listing.txt'
 
+        container_filter = ''
+        m = re.search('^/([^\/]+)/([^\/]+)/([^\/]+)/artifacts',
+                      request.script_root)
+        if m:
+            container_filter = m.group(1) + ':' + m.group(2) + ':' + m.group(3) + ':'
+
         return render_template(
             template_file,
             entries=resp.json(),
             prefix=filepath,
+            container_filter=container_filter,
             builds_url=url_for('displaycontent'))
     else:
         logger.info('getting file %s on %s', filepath, container)

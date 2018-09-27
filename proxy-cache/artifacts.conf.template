@@ -34,7 +34,7 @@ server {
     # fastcgi config
     fastcgi_read_timeout 900s;
     fastcgi_param PATH_INFO $fastcgi_script_name;
-    fastcgi_param SCRIPT_NAME "";
+    fastcgi_param SCRIPT_NAME $http_script_name;
     fastcgi_pass ${ARTIFACTS_HOST};
   }
 
@@ -57,7 +57,7 @@ server {
     # fastcgi config
     fastcgi_read_timeout 900s;
     fastcgi_param PATH_INFO $fastcgi_script_name;
-    fastcgi_param SCRIPT_NAME "";
+    fastcgi_param SCRIPT_NAME $http_script_name;
     fastcgi_pass ${ARTIFACTS_HOST};
   }
 
