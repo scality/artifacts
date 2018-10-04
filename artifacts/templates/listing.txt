@@ -1,3 +1,9 @@
-{%- for entry in entries if 'name' in entry -%}
-{{- entry.name.replace(prefix, '', 1) + '\n' -}}
+{%- for entry in entries -%}
+{%- if 'subdir' in entry -%}
+{%- set link = entry.subdir -%}
+{%- endif -%}
+{%- if 'name' in entry -%}
+{%- set link = entry.name -%}
+{%- endif -%}
+{{- link + '\n' -}}
 {%- endfor -%}

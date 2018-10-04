@@ -8,6 +8,7 @@ import sys
 from providers import CloudFiles
 from flask import (abort,
                    Flask,
+                   make_response,
                    request,
                    Response,
                    send_file,
@@ -119,7 +120,7 @@ def displaycontent(container, filepath):
         if resp.status_code >= 400:
             abort(resp.status_code)
 
-        if output_format != "txt":
+        if output_format not in ("txt", "text"):
             template_file = 'listing.html'
         else:
             template_file = 'listing.txt'
@@ -130,12 +131,17 @@ def displaycontent(container, filepath):
         if m:
             container_filter = m.group(1) + ':' + m.group(2) + ':' + m.group(3) + ':'
 
-        return render_template(
+        resp = make_response(render_template(
             template_file,
             entries=resp.json(),
             prefix=filepath,
             container_filter=container_filter,
-            builds_url=url_for('displaycontent'))
+            builds_url=url_for('displaycontent')))
+
+        if output_format in ("txt", "text"):
+            resp.headers['Content-type'] = 'text/plain'
+
+        return resp
     else:
         logger.info('getting file %s on %s', filepath, container)
         resp = provider.headfile(container, filepath)
