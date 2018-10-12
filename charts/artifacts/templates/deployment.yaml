@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" $ }}
+  labels:
+    app: {{ template "fullname" $ }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "fullname" $ }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" $ }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      containers:
+      - name: artifacts
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.deployment.service.port }}
+        envFrom:
+        - secretRef:
+            name: {{ template "fullname" $ }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+{{ toYaml .Values.deployment.artifacts.livenessProbe | indent 10 }}
+        resources:
+{{ toYaml .Values.deployment.artifacts.resources | indent 10 }}
+      - name: proxy-cache
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}-{{ .Values.image.proxyCacheSuffix }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 80
+{{ toYaml .Values.deployment.proxyCache.livenessProbe | indent 10 }}
+        resources:
+{{ toYaml .Values.deployment.proxyCache.resources | indent 10 }}
+        volumeMounts:
+          - name: cache
+            mountPath: /data/nginx
+      volumes:
+      - name: cache
+        emptyDir:
+      {{- with .Values.deployment.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+      {{- end -}}
+      {{- with .Values.deployment.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+      {{- end }}
