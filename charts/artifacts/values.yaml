@@ -1,0 +1,187 @@
+# Default values file for artifacts helm chart.
+
+## nameOverride allows to change the name of the release
+## rather than default value 'artifacts'
+nameOverride: "artifacts"
+
+## useShortName shorten names of Kubernetes resources.
+##
+##   The release name will not be included in fullname. This
+##   is safe to use only if one release only is deployed
+##
+useShortNames: false
+
+cloudStorage:
+  ## endpoint is the cloud storage API endpoint.
+  ##
+  endpoint: ""
+
+  ## username contains the account information to access cloud storage.
+  ##
+  username: ""
+
+  ## password contains the account information to access cloud storage.
+  ##
+  password: ""
+
+image:
+  ## regitry to pull from.
+  ##
+  registry: docker.io
+
+  ## repository on the registry to pull from.
+  ##
+  repository: scality/artifacts
+
+  ## tag specifies the version to deploy.
+  ##
+  tag: 2.0.4
+
+  ## proxyCacheSuffix is the suffix of the proxy-cache image
+  ##
+  ##  The docker repository must contain 2 images:
+  ##  - the HTTP app: {registry}/{repository}:{tag}
+  ##  - the proxy cache: {registry}/{repository}:{tag}-{proxyCacheSuffix}
+  ##
+  proxyCacheSuffix: "proxy-cache"
+
+  ## pullPolicy specifies the image pull policy
+  ##
+  ##   Defaults to 'IfNotPresent'
+  ##
+  pullPolicy: IfNotPresent
+
+  ## pullsecrets specifies a list of imagePullSecrets.
+  ##
+  ##   Secrets must be manually created in the namespace.
+  ##
+  pullSecrets: []
+
+## Kubernetes deployment configuration
+deployment:
+  ## Autoscaler settings minReplicas and maxReplicas
+  ##
+  ## default: min = 1 and max = 1 (i.e. one at all times)
+  ##
+  minReplicas: 1
+  maxReplicas: 1
+
+  ## autoscalerSpec contains the dictionnary to insert in place
+  ## of criterias to meet to scale up and down.
+  ##
+  autoscalerSpec:
+    targetCPUUtilizationPercentage: 90
+
+  artifacts:
+    ## Configure extra options for liveness and readiness probes
+    livenessProbe:
+      initialDelaySeconds: 300
+      periodSeconds: 60
+      # a relatively high timeout because
+      # the requests are not handled in
+      # parallel for now:
+      timeoutSeconds: 60
+      failureThreshold: 1
+      successThreshold: 1
+
+    ## Configure resource requests and limits
+    resources:
+      limits:
+        cpu: "2"
+        memory: "1Gi"
+      requests:
+        cpu: "2"
+        memory: "1Gi"
+
+  proxyCache:
+    ## Configure extra options for liveness and readiness probes
+    livenessProbe:
+      initialDelaySeconds: 300
+      periodSeconds: 60
+      # a relatively high timeout because
+      # the requests are not handled in
+      # parallel for now:
+      timeoutSeconds: 60
+      failureThreshold: 1
+      successThreshold: 1
+
+    ## Configure resource requests and limits
+    resources:
+      limits:
+        cpu: "1"
+        memory: "3Gi"
+      requests:
+        cpu: "500m"
+        memory: "3Gi"
+
+  ## Configure the ingress resource that allows you to access the service.
+  ingress:
+    ## enabled sets the ingress record generation or not.
+    ##
+    ##   Defaults to false.
+    ##
+    enabled: false
+
+    ## fqdn is the protocol/hostname to be covered with this ingress record.
+    ##
+    fqdn: "http://artifacts.local"
+
+    ## path contains the subpath where to access the HTTP service.
+    ##
+    ##   Defaults to '/'.
+    ##
+    path: "/"
+
+    ## tls is set to true in order to enable TLS on the ingress record.
+    ##
+    ##   Defaults to false.
+    ##
+    tls: false
+
+    ## tlsSecret specifies a secret that contains the key/certificate for TLS
+    ##
+    tlsSecret: "tls-secret"
+
+    ## annotations contains the Ingress annotations done as key:value pairs
+    ##
+    annotations: {}
+
+    basicAuth:
+      ## enabled specifies if basic authentication should be enabled.
+      ##
+      ##   This is compatible with a Nginx ingress controller only.
+      ##
+      enabled: False
+
+      ## username is the basic auth login.
+      ##
+      username: ""
+
+      ## passwordHash is the basic auth hashed password.
+      ##
+      passwordHash: ""
+
+  service:
+    ## port designates the service port
+    ##
+    ##   Defaults to 80
+    ##
+    port: 80
+
+    ## sessionAffinity is the service session affinity
+    ##
+    ##   Defaults to ClientIP
+    ##
+    sessionAffinity: "ClientIP"
+
+  ## Node labels for pod assignment
+  ##
+  nodeSelector: {}
+
+  ## Tolerations for pod assignment
+  ##
+  tolerations: []
+
+  ## Affinity for pod assignment
+  ##
+  affinity: {}

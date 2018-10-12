@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "fullname" $ }}
+  labels:
+    app: {{ template "fullname" $ }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  sessionAffinity: {{ .Values.deployment.service.sessionAffinity }}
+  ports:
+    - name: http
+      port: {{ .Values.deployment.service.port }}
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: {{ template "fullname" $ }}

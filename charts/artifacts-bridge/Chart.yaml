@@ -1,0 +1,12 @@
+name: artifacts-bridge
+version: 1.0.0
+description: Namespace bridge for central artifacts deployment.
+keywords:
+- Eve
+- artifacts
+- namespace bridge
+sources:
+- https://bitbucket.org/scality/artifacts
+maintainers:
+- name: Scality Release Engineering
+  email: release.engineering@scality.com
