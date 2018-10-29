@@ -43,7 +43,7 @@ spec:
           backend:
             serviceName: {{ $.Values.deployment.service.name }}
             servicePort: {{ $.Values.deployment.service.port }}
-  {{- if .tlsSecret }}
+  {{- if .tls }}
   tls:
   - hosts:
     - {{ .fqdn }}
