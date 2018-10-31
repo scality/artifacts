@@ -30,17 +30,9 @@ spec:
       - name: artifacts
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
-        ports:
-        - name: http
-          containerPort: {{ .Values.deployment.service.port }}
         envFrom:
         - secretRef:
             name: {{ template "fullname" $ }}
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-{{ toYaml .Values.deployment.artifacts.livenessProbe | indent 10 }}
         resources:
 {{ toYaml .Values.deployment.artifacts.resources | indent 10 }}
       - name: proxy-cache
@@ -58,7 +50,7 @@ spec:
             mountPath: /data/nginx
       volumes:
       - name: cache
-        emptyDir:
+        emptyDir: {}
       {{- with .Values.deployment.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}

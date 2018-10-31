@@ -73,17 +73,6 @@ deployment:
     targetCPUUtilizationPercentage: 90
 
   artifacts:
-    ## Configure extra options for liveness and readiness probes
-    livenessProbe:
-      initialDelaySeconds: 300
-      periodSeconds: 60
-      # a relatively high timeout because
-      # the requests are not handled in
-      # parallel for now:
-      timeoutSeconds: 60
-      failureThreshold: 1
-      successThreshold: 1
-
     ## Configure resource requests and limits
     resources:
       limits:
