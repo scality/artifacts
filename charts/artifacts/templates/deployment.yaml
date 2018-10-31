@@ -50,7 +50,7 @@ spec:
             mountPath: /data/nginx
       volumes:
       - name: cache
-        emptyDir:
+        emptyDir: {}
       {{- with .Values.deployment.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
