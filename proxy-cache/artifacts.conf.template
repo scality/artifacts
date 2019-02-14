@@ -9,8 +9,6 @@ server {
 
   client_max_body_size 8g;
 
-  limit_rate 20m;
-
   set $no_cache "0";
   set $cache_bypass "0";
 
