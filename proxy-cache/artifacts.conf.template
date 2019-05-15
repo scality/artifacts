@@ -9,8 +9,8 @@ server {
 
   client_max_body_size 8g;
 
-  set $no_cache "0";
-  set $cache_bypass "0";
+  set $no_cache "${NGINX_NO_CACHE}";
+  set $cache_bypass "${NGINX_NO_CACHE}";
 
   location @internals {
     fastcgi_cache internals;
