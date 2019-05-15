@@ -73,6 +73,8 @@ deployment:
     targetCPUUtilizationPercentage: 90
 
   artifacts:
+    # Configure additional env variables
+    env:
     ## Configure resource requests and limits
     resources:
       limits:
@@ -83,6 +85,8 @@ deployment:
         memory: "1Gi"
 
   proxyCache:
+    # Configure additional env variables
+    env:
     ## Configure extra options for liveness and readiness probes
     livenessProbe:
       initialDelaySeconds: 300

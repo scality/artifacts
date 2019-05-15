@@ -30,6 +30,11 @@ spec:
       - name: artifacts
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        env:
+{{- range $key, $value := .Values.deployment.artifacts.env }}
+        - name: "{{ $key }}"
+          value: "{{ $value }}"
+{{- end }}
         envFrom:
         - secretRef:
             name: {{ template "fullname" $ }}
@@ -38,6 +43,11 @@ spec:
       - name: proxy-cache
         image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}-{{ .Values.image.proxyCacheSuffix }}"
         imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        env:
+{{- range $key, $value := .Values.deployment.proxyCache.env }}
+        - name: "{{ $key }}"
+          value: "{{ $value }}"
+{{- end }}
         livenessProbe:
           httpGet:
             path: /healthz
