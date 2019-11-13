@@ -97,7 +97,7 @@ server {
         set $cache_bypass "1";
     }
 
-    if ($request_uri ~ ^.*/$) {
+    if ($uri ~ ^.*/$) {
         set $no_cache "1";
         set $cache_bypass "1";
     }
