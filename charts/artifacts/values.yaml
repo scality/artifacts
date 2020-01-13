@@ -12,17 +12,17 @@ nameOverride: "artifacts"
 useShortNames: false
 
 cloudStorage:
-  ## endpoint is the cloud storage API endpoint.
+  ## awsaccesskeyid contains the account information to access cloud storage.
   ##
-  endpoint: ""
+  awsaccesskeyid: ""
 
-  ## username contains the account information to access cloud storage.
+  ## awssecretaccesskey contains the account information to access cloud storage.
   ##
-  username: ""
+  awssecretaccesskey: ""
 
-  ## password contains the account information to access cloud storage.
+  ## awsbucketprefix contains the bucket prefix to access cloud storage.
   ##
-  password: ""
+  awsbucketprefix: ""
 
 image:
   ## regitry to pull from.
@@ -35,15 +35,7 @@ image:
 
   ## tag specifies the version to deploy.
   ##
-  tag: 2.0.4
-
-  ## proxyCacheSuffix is the suffix of the proxy-cache image
-  ##
-  ##  The docker repository must contain 2 images:
-  ##  - the HTTP app: {registry}/{repository}:{tag}
-  ##  - the proxy cache: {registry}/{repository}:{tag}-{proxyCacheSuffix}
-  ##
-  proxyCacheSuffix: "proxy-cache"
+  tag: 3.0.0
 
   ## pullPolicy specifies the image pull policy
   ##
@@ -81,27 +73,6 @@ deployment:
       requests:
         cpu: "2"
         memory: "1Gi"
-
-  proxyCache:
-    ## Configure extra options for liveness and readiness probes
-    livenessProbe:
-      initialDelaySeconds: 300
-      periodSeconds: 60
-      # a relatively high timeout because
-      # the requests are not handled in
-      # parallel for now:
-      timeoutSeconds: 60
-      failureThreshold: 1
-      successThreshold: 1
-
-    ## Configure resource requests and limits
-    resources:
-      limits:
-        cpu: "1"
-        memory: "3Gi"
-      requests:
-        cpu: "500m"
-        memory: "3Gi"
 
   ## Configure the ingress resource that allows you to access the service.
   ingress:

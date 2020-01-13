@@ -1,0 +1,477 @@
+# Reverse-proxy configuration for listing, download, upload, redirect
+# operations on a Google Cloud Storage S3 compatible bucket, with an
+# additional feature to find build depending on prefix and status.
+
+# Google Cloud Storage S3 compatible credentials.
+env AWS_ACCESS_KEY_ID;
+env AWS_SECRET_ACCESS_KEY;
+
+# Google Cloud Storage S3 compatible bucket prefix.
+env AWS_BUCKET_PREFIX;
+
+# It is recommended to set one worker process per CPU core.
+worker_processes 2;
+
+# The maximum number of connections allowed to a worker.
+events {
+  worker_connections 1024;
+}
+
+http {
+  # Uncomment the line below to enable some debug.
+  #
+  # error_log /dev/stderr debug;
+
+  # Define a format that will also log cache hit or miss in access_log. This
+  # is based on the combined format (enabled by default), where it adds the
+  # cache status and removes the remote user info.
+  #
+  log_format access_cache '$remote_addr - $upstream_cache_status [$time_local] '
+                         '"$request" $status $body_bytes_sent '
+                         '"$http_referer" "$http_user_agent"';
+  access_log /dev/stdout access_cache;
+
+  # Mandatory directive to run lua stuff.
+  #
+  lua_package_path "/usr/local/lib/lua/?.lua;;";
+
+  # Do not resolve in IPv6.
+  #
+  resolver 8.8.8.8 valid=300s ipv6=off;
+
+  # Volume used to store body from upload requests temporarily
+  #
+  proxy_temp_path /data/nginx/temp;
+
+  # Volume used to cache objects
+  #
+  proxy_cache_path /data/nginx/cache levels=1:2 keys_zone=download_cache:10m max_size=16g inactive=1d use_temp_path=off;
+
+  # The upstream will handle a pool of keep-alive connections to the backend
+  # and it will also be used to handle the retries on backend errors.
+  #
+  upstream keepalivepool {
+
+    # We set up a pool of two servers which both define the same backend in
+    # order to give to the retry mechanism (configured in /download and /upload
+    # locations) a chance to use another server in the pool on error. As
+    # backend errors are expected to be transient, it is OK to retry on the
+    # same backend.
+    #
+    # Speaking of transient errors, we have to disable the nginx internal
+    # mechanism of servers blacklisting when errors are encountered. This is
+    # achieved by setting the max_fails option to 0. This way, we authorize an
+    # unlimited amound of errors before blacklisting the server and as a
+    # consequence it will never be blacklisted.
+    #
+    # Nginx resolves backends at start and reload only and ignores the
+    # resolver settings at this stage. So, we can not limit the resolution to
+    # IPv4, which generates flaky connect() errors leading to 502 errors. We
+    # can fix this by forcing a resolution ourselves before the nginx launch
+    # and fill the configuration with the IPv4.
+    #
+    # Please note that in the commercial version, there is a "resolve" option
+    # to the "server" directive that uses the resolver to handle the
+    # resolution. This may be ported to the open source version someday.
+    #
+    server __S3_ENDPOINT__:443 max_fails=0;
+    server __S3_ENDPOINT__:443 max_fails=0;
+
+    # Max number of unused keep-alive connections kept open per worker process
+    # for the pool.
+    #
+    keepalive 16;
+
+    # Max number of requests per connection.
+    #
+    keepalive_requests 256;
+
+    # Max time of inactivity per connection.
+    #
+    keepalive_timeout 60s;
+  }
+
+  # Store client request before sending it via proxy_pass. This is mandatory
+  # in order to make proxy_next_upstream work, which is the only way we have
+  # to retry silently.
+  #
+  proxy_request_buffering on;
+
+  # Enable retry for connect, timeout, 502 and 503 errors.
+  #
+  proxy_next_upstream error timeout http_502 http_503;
+
+  # Limit number of retries to 5.
+  #
+  proxy_next_upstream_tries 5;
+
+
+  server {
+    # Use plain HTTP, as we are on a private network.
+    #
+    listen 80;
+
+    # Do not limit the size of an uploaded object.
+    #
+    client_max_body_size 0;
+
+    # Mandatory to support keep-alive connections.
+    #
+    proxy_http_version 1.1;
+
+    # Handle "latest" feature.
+    #
+    location ~ ^/latest/(.*)$ {
+      set $prefix $1;
+      set $expected_status "";
+      rewrite_by_lua_file /etc/nginx/find_build.ljbc;
+    }
+
+    # Handle "last_success" feature.
+    #
+    location ~ ^/last_success/(.*)$ {
+      set $prefix $1;
+      set $expected_status "SUCCESSFUL";
+      rewrite_by_lua_file /etc/nginx/find_build.ljbc;
+    }
+
+    # Handle "last_failure" feature.
+    #
+    location ~ ^/last_failure/(.*)$ {
+      set $prefix $1;
+      set $expected_status "FAILED";
+      rewrite_by_lua_file /etc/nginx/find_build.ljbc;
+    }
+
+    # Handle "/builds/" location to keep backward compatibility with the
+    # previous artifacts implementations.
+    #
+    location ~ ^/builds/ {
+      rewrite ^/builds/(.*)$ /download/$1 last;
+    }
+
+    # Hack
+    #
+    # For some unknown reason the subrequest initiated by the lua call
+    # ngx.location.capture() does not receive its content transformed by the
+    # xslt module (probably due to some subrequest implementation choice for
+    # the sake of optimization). I also noticed some other issues and suspect
+    # that you can not trust some nginx vars in the context of a subrequest.
+    #
+    # To solve this, a specific location has been added for that will force a
+    # real request by using a proxy_pass to a full url.
+    #
+    location ~ ^/force_real_request/(.*)$ {
+      # Not exposed to external requests.
+      #
+      internal;
+
+      proxy_pass http://127.0.0.1/$1$is_args$args;
+      proxy_set_header Host $host;
+    }
+
+
+    # Handle the browsing feature.
+    #
+    location ~ ^/download/(|.*/)$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize path.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      #
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]*$') {
+        return 400;
+      }
+
+      # Process browse.
+      #
+      content_by_lua_file /etc/nginx/browse.ljbc;
+    }
+
+    # Process listing in raw format.
+    #
+    # query_string optionnal args:
+    #   delimiter
+    #   marker
+    #   bucket
+    location ~ ^/browse_raw/(|.*/)$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize path.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]*$') {
+        return 400;
+      }
+
+      # Process AWS S3 signature.
+      #
+      set $signature_mode "LISTING";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $aws_tgt_bucket "$arg_bucket";
+      set $encoded_prefix "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      # Set S3 headers for the request send to the backend.
+      #
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date $x_amz_date;
+
+      # Mandatory otherwise the upstream name will be considered as a part of
+      # the uri when the resquest will be processed in the upstream.
+      #
+      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+
+      # Enabled keep-alive to backend.
+      #
+      proxy_set_header Connection "keep-alive";
+
+      # Proxy request to upstream "keepalivepool".
+      #
+      proxy_pass https://keepalivepool/?prefix=$encoded_prefix&delimiter=$arg_delimiter&marker=$arg_marker;
+
+      # Filter out XML in raw format.
+      #
+      xslt_types application/xml;
+      xslt_stylesheet /etc/nginx/browse.raw.xslt;
+      xslt_string_param listing_path $canonical_path;
+    }
+
+    # Redirect to an object.
+    #
+    location ~ ^/redirect/([^/]+/.*[^/])$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process AWS S3 signature.
+      #
+      set $signature_mode "PRESIGN";
+      set $redirect_url   "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      # Send a temporarily redirect to Google Cloud Storage.
+      #
+      return 302 $redirect_url;
+    }
+
+    # This will be called to send a generic 404 body instead of the XML body
+    # sent by the upstream.
+    #
+    location @not_found {
+      return 404;
+    }
+
+    # Download an object.
+    #
+    location ~ ^/download/([^/]+/.*[^/])$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process AWS S3 signature.
+      #
+      set $signature_mode "DOWNLOAD";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $aws_tgt_bucket "";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      # Set S3 headers for the request send to the backend.
+      #
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date $x_amz_date;
+
+      # Mandatory otherwise the upstream name will be considered as a part of
+      # the uri when the resquest will be processed in the upstream.
+      #
+      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+
+      # Enabled keep-alive to backend.
+      #
+      proxy_set_header Connection "keep-alive";
+      proxy_set_header ForceCacheUpdate "";
+
+      # Cache the object, if possible.
+      #
+      proxy_ignore_headers Cache-Control Expires;
+      proxy_cache_bypass $http_forcecacheupdate;
+      proxy_cache_valid 200 1d;
+      proxy_cache_valid 404 1m;
+      proxy_cache download_cache;
+
+      # This will let nginx override the 404 error body sent by upstream in
+      # XML with its own content.
+      #
+      proxy_intercept_errors on;
+      error_page 404 @not_found;
+
+      # Proxy request to upstream "keepalivepool".
+      #
+      proxy_pass https://keepalivepool/$encoded_key;
+    }
+
+    # Copy an object wih the following syntax:
+    #
+    # /src_build/tgt_build/object_path
+    #
+    location ~ ^/copy/[^/]+/[^/]+/.*[^/]$ {
+      if ($request_method != PUT) {
+        return 400;
+      }
+
+      if ($remote_addr != 127.0.0.1) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process AWS S3 signature.
+      #
+      set $signature_mode    "COPY";
+      set $aws_access_key    "";
+      set $aws_signature     "";
+      set $x_amz_date        "";
+      set $x_amz_copy_source "";
+      set $aws_tgt_bucket    "";
+      set $encoded_key       "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      # Set S3 headers for the request send to the backend.
+      #
+      proxy_set_header Authorization     "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date        $x_amz_date;
+      proxy_set_header x-amz-copy-source $x_amz_copy_source;
+
+      # Mandatory otherwise the upstream name will be considered as a part of
+      # the uri when the resquest will be processed in the upstream.
+      #
+      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+
+      # Enabled keep-alive to backend.
+      #
+      proxy_set_header Connection "keep-alive";
+
+      # Proxy request to upstream "keepalivepool".
+      #
+      proxy_pass https://keepalivepool/$encoded_key;
+    }
+
+    # Copy a build.
+    #
+    location ~ ^/copy/[^/]+/[^/]+/$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process build copy.
+      #
+      content_by_lua_file /etc/nginx/copy_build.ljbc;
+    }
+
+    # Put an object.
+    #
+    location ~ ^/upload/([^/]+/.*[^/])$ {
+      if ($request_method != PUT) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Check that we are uploading an object to a staging build
+      if ($canonical_path !~ '^[^/]+\:staging\-[0-9]+(\.[0-9]+){1,3}\.r[0-9]{12}\.[0-9a-f]+\.[^/]+\.[0-9]+/') {
+        return 400;
+      }
+
+      # Process AWS S3 signature.
+      #
+      set $signature_mode "UPLOAD";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $x_amz_acl      "";
+      set $aws_tgt_bucket "${AWS_BUCKET_PREFIX}-staging";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      # Set S3 headers for the request send to the backend.
+      #
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header x-amz-acl     $x_amz_acl;
+
+      # Mandatory otherwise the upstream name will be considered as a part of
+      # the uri when the resquest will be processed in the upstream.
+      #
+      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+
+      # Enabled keep-alive to backend.
+      #
+      proxy_set_header Connection "keep-alive";
+
+      # This will prevent the object to be cached in the Google Cloud Storage
+      # infrastructure when it will be downloaded.
+      #
+      proxy_set_header Cache-Control "no-cache";
+      proxy_set_header Cache-Control "no-store";
+
+      # Proxy request to upstream "keepalivepool".
+      #
+      proxy_pass https://keepalivepool/$encoded_key;
+    }
+  }
+}
