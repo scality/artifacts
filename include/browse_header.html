@@ -1,0 +1,112 @@
+<html>
+
+<head>
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- jquery-3.3.1.min.js *MUST* be loaded before bootstrap.min.js, otherwise dialog windows will not pop -->
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<style>
+.icon-success {
+    color: #5CB85C;
+}
+.icon-failure {
+    color: #D9534F;
+}
+.icon-hide {
+    color: transparent;
+}
+</style>
+
+<script>
+var artifacts_base_url;
+var artifacts_base_url_index;
+var artifacts_base_url_regex;
+
+function artifacts_base_url_init() {
+    var dirs = window.location.pathname.split('/');
+    var i;
+
+    for (i=1; i<dirs.length; i++) {
+        if (dirs[i] == "builds" || dirs[i] == "download") {
+            break;
+        }
+    }
+
+    artifacts_base_url_index = i;
+    artifacts_base_url = '/' + dirs.slice(1,i+1).join('/') + '/';
+    artifacts_base_url_regex = new RegExp("^" + artifacts_base_url + "([^\/]+)\/");
+}
+function sanitize_content(content) {
+    var new_content = content;
+
+    new_content.replace(/&/g, '&amp;');
+    new_content.replace(/</g, '&lt;');
+    new_content.replace(/>/g, '&gt;');
+    new_content.replace(/"/g, '&quot;');
+    new_content.replace(/'/g, '&#39;');
+
+    return new_content;
+}
+function display_directory_navigation() {
+    var dirs = window.location.pathname.split('/');
+    var cdir = '';
+    var i;
+
+    for (i=artifacts_base_url_index; i<dirs.length-2; i++) {
+        cdir += '<b><a href="/' + dirs.slice(1,i+1).join('/')  + '/">' + dirs[i] + '</a></b> / ';
+    }
+    cdir += dirs[dirs.length-2];
+    document.getElementById("div_navigation").innerHTML = cdir;
+}
+function display_build_status() {
+    var container = window.location.pathname.match(artifacts_base_url_regex)[1];
+    var file = new XMLHttpRequest();
+    file.onreadystatechange = function() {
+        if (file.readyState == 4) {
+            if (file.status == 200) {
+                var iconColor = '';
+                var iconShape = ' glyphicon-minus';
+                if (file.responseText == 'SUCCESSFUL') {
+                    iconColor = ' icon-success';
+                    iconShape = ' glyphicon-ok';
+                }
+                if (file.responseText == 'FAILED') {
+                    iconColor = ' icon-failure';
+                    iconShape = ' glyphicon-remove';
+                }
+                document.getElementById("div_build_status").innerHTML = '<span class="glyphicon' + iconShape + iconColor + '"></span>';
+            }
+        }
+    };
+    file.open("GET", artifacts_base_url + container + "/.final_status", true);
+    file.send();
+}
+</script>
+
+</head>
+
+<body>
+
+<div class="page-header">
+  <h1>&nbsp;Artifacts</h1>
+  <table width="100%" height="70" border="0">
+    <tr>
+      <td align="left">
+	&nbsp;&nbsp;
+	<span id="div_build_status"><span class="glyphicon glyphicon-minus icon-hide"></span></span>&nbsp;
+        <span id="div_navigation"></span>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<ul class="list-group">
