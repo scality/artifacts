@@ -6,6 +6,7 @@
 
 
 local aws_bucket_prefix = os.getenv('AWS_BUCKET_PREFIX')
+local build_prefixes = { "dev%-", "preprod%-", "" }
 
 
 -- Get encoded key.
@@ -33,8 +34,10 @@ end
 -- Check if this is a promoted build.
 --
 local function is_promoted(build_name)
-  if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:promoted-") then
-    return true
+  for i=1, #build_prefixes do
+    if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "promoted%-") then
+      return true
+    end
   end
   return false
 end
@@ -43,8 +46,10 @@ end
 -- Check if this is a staging build (with no expiration disabled).
 --
 local function is_staging (build_name)
-  if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:staging-") then
-    return true
+  for i=1, #build_prefixes do
+    if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "staging%-") then
+      return true
+    end
   end
   return false
 end
