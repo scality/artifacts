@@ -4,12 +4,8 @@
 ## rather than default value 'artifacts'
 nameOverride: "artifacts"
 
-## useShortName shorten names of Kubernetes resources.
-##
-##   The release name will not be included in fullname. This
-##   is safe to use only if one release only is deployed
-##
-useShortNames: false
+## fullnameOverride allows to change the full name of resources
+fullnameOverride:
 
 cloudStorage:
   ## awsaccesskeyid contains the account information to access cloud storage.
