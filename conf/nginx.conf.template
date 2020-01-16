@@ -150,6 +150,13 @@ http {
       rewrite ^/builds/(.*)$ /download/$1 last;
     }
 
+    # Redirect "/" location to "/builds/" to keep backward compatibility
+    # with the previous artifacts implementations.
+    #
+    location ~ ^/$ {
+      return 302 /builds/;
+    }
+
     # Hack
     #
     # For some unknown reason the subrequest initiated by the lua call
