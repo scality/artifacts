@@ -125,9 +125,6 @@ local function render_list(mode, entries, buckets)
   for i = 1, #buckets do
     local bucket_entries = entries[buckets[i]]
     local output = ""
-    if mode == "html" and #buckets > 1 then
-      output = output .. "<hr>" .. buckets[i] .. "</hr>\n"
-    end
     for j = 1, #bucket_entries do
       local object = bucket_entries[j]
       if mode == "html" then
