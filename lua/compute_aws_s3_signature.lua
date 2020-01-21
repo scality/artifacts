@@ -22,10 +22,11 @@ local function get_encoded_prefix (prefix)
   -- If the prefix is empty, this means are browsing the root directory. But
   -- as we do not want to list the artifacts for every project, we set the
   -- prefix to a value that will match only builds for the current project.
-  -- This value is passed by the ingress in the "Project-Prefix" HTTP header.
+  -- This value can be computed from the ingress in the "Script-Name" HTTP
+  -- header.
   --
-  if prefix == "" and ngx.var.http_project_prefix ~= nil then
-    prefix = ngx.var.http_project_prefix
+  if prefix == "" and ngx.var.http_script_name ~= nil then
+    prefix = string.match(ngx.var.http_script_name, "[^/]+/[^/]+/[^/]+/"):gsub("/", ":")
   end
   return ngx.escape_uri(prefix)
 end

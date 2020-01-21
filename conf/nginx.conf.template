@@ -154,7 +154,7 @@ http {
     # with the previous artifacts implementations.
     #
     location ~ ^/$ {
-      return 302 /builds/;
+      return 302 $http_script_name/builds/;
     }
 
     # Hack
