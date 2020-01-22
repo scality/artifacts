@@ -128,7 +128,13 @@ local function render_list(mode, entries, buckets)
     for j = 1, #bucket_entries do
       local object = bucket_entries[j]
       if mode == "html" then
-        output = output .. "<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. object .. "'>" .. object .. "</a></li>\n"
+        rendered_object = ngx.escape_uri(object)
+        rendered_object = rendered_object:gsub('%%2F', '/')
+        if object:sub(-1) ~= "/" then
+          output = output .. "<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "' download='" .. object .. "'>" .. object .. "</a></li>\n"
+        else
+          output = output .. "<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "'>" .. object .. "</a></li>\n"
+	end
       else
         output = output .. object .. "\n"
       end

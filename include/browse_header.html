@@ -45,24 +45,16 @@ function artifacts_base_url_init() {
     artifacts_base_url = '/' + dirs.slice(1,i+1).join('/') + '/';
     artifacts_base_url_regex = new RegExp("^" + artifacts_base_url + "([^\/]+)\/");
 }
-function sanitize_content(content) {
-    var new_content = content;
-
-    new_content.replace(/&/g, '&amp;');
-    new_content.replace(/</g, '&lt;');
-    new_content.replace(/>/g, '&gt;');
-    new_content.replace(/"/g, '&quot;');
-    new_content.replace(/'/g, '&#39;');
-
-    return new_content;
-}
 function display_directory_navigation() {
-    var dirs = window.location.pathname.split('/');
+    var decoded_path = decodeURIComponent(window.location.pathname);
+    var dirs = decoded_path.split('/');
     var cdir = '';
     var i;
 
     for (i=artifacts_base_url_index; i<dirs.length-2; i++) {
-        cdir += '<b><a href="/' + dirs.slice(1,i+1).join('/')  + '/">' + dirs[i] + '</a></b> / ';
+        var encoded_path_part = encodeURIComponent(dirs.slice(1,i+1).join('/'));
+        encoded_path_part = encoded_path_part.replace(/%2F/gi, '/');
+        cdir += '<b><a href="/' + encoded_path_part  + '/">' + dirs[i] + '</a></b> / ';
     }
     cdir += dirs[dirs.length-2];
     document.getElementById("div_navigation").innerHTML = cdir;
