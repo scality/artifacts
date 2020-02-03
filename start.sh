@@ -9,6 +9,23 @@ ipv4=$(host ${AWS_BUCKET_PREFIX}-staging.storage.googleapis.com | grep 'has addr
 # define supported charset
 supported_charset='\/0-9a-zA-Z_ ,:@=\\-\\.\\+\\~\\(\\)\;\&'
 
+# generate mime types map file
+mimetypes_raw=$(tr -d '\r\n' < /etc/nginx/mime.types | sed -E 's/^[^\{]*\{(.*)\}[^\{]*$/\1/' | sed -E 's/\s+/ /g' | sed -E 's/;\s/;/g' | sed -E 's/^\s//')
+IFS=';'
+read -ra MIMETYPES <<< "$mimetypes_raw"
+IFS=' '
+echo "map \$file_extension \$file_mime_type {" > /etc/nginx/mimetypes.map
+echo "default application/binary;" >> /etc/nginx/mimetypes.map
+for i in "${MIMETYPES[@]}"
+do
+    read -ra MIMETYPE <<< "$i"
+    for j in "${MIMETYPE[@]:1}"
+    do
+        echo "."$j" "${MIMETYPE[0]}";" >> /etc/nginx/mimetypes.map
+    done
+done
+echo "}" >> /etc/nginx/mimetypes.map
+
 # generate nginx configuration
 sed -e "s/\${AWS_BUCKET_PREFIX}/${AWS_BUCKET_PREFIX}/g" \
     -e "s/__S3_ENDPOINT__/$ipv4/g" \
