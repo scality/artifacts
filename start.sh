@@ -26,10 +26,16 @@ do
 done
 echo "}" >> /etc/nginx/mimetypes.map
 
+# generate xslt file (by default, set it up for Google Cloud Storage use)
+# For Google Cloud Storage: http://doc.s3.amazonaws.com/2006-03-01
+# For CLoud Server: http://s3.amazonaws.com/doc/2006-03-01/
+sed -e "s|__AWS_XML_NS__|${AWS_XML_NS:=http://doc.s3.amazonaws.com/2006-03-01}|g" \
+    /etc/nginx/browse.raw.xslt.template > /etc/nginx/browse.raw.xslt
+
 # generate nginx configuration
-sed -e "s/\${AWS_BUCKET_PREFIX}/${AWS_BUCKET_PREFIX}/g" \
-    -e "s/__S3_ENDPOINT__/$ipv4/g" \
-    -e "s/__SUPPORTED_CHARSET__/$supported_charset/g" \
+sed -e "s|\${AWS_BUCKET_PREFIX}|${AWS_BUCKET_PREFIX}|g" \
+    -e "s|__S3_ENDPOINT__|${ipv4}|g" \
+    -e "s|__SUPPORTED_CHARSET__|${supported_charset}|g" \
     /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 # launch nginx
