@@ -105,6 +105,11 @@ http {
   #
   proxy_next_upstream_tries 5;
 
+  # This map will be used to force a "Content-type" header depending on the
+  # proxyfied object extension. If no extension is found or no extension is
+  # matching, a value of "application/binary" will be set.
+  #
+  include /etc/nginx/mimetypes.map;
 
   server {
     # Use plain HTTP, as we are on a private network.
@@ -343,6 +348,12 @@ http {
       #
       proxy_intercept_errors on;
       error_page 404 @not_found;
+
+      # Do not mess the browser with generic Content-type from the S3 storage.
+      #
+      proxy_hide_header Content-type;
+      set_by_lua_block $file_extension { return string.match(ngx.var.canonical_path, "%.[A-Za-z0-9]+$") }
+      add_header Content-type $file_mime_type;
 
       # Proxy request to upstream "keepalivepool".
       #
