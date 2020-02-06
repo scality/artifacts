@@ -101,7 +101,7 @@ RUN /usr/local/bin/luajit -b /etc/nginx/copy_build.lua /etc/nginx/copy_build.ljb
 RUN /usr/local/bin/luajit -b /etc/nginx/browse.lua /etc/nginx/browse.ljbc
 
 # Install xslt filter
-COPY xslt/browse.raw.xslt /etc/nginx/browse.raw.xslt
+COPY xslt/browse.raw.xslt.template /etc/nginx/browse.raw.xslt.template
 
 # Install nginx configurations file
 COPY conf/nginx.conf.template /etc/nginx/nginx.conf.template
