@@ -6,9 +6,9 @@ EXPOSE 80
 # Declare volume where cache objects and request bodies will be stored
 VOLUME ["/data/nginx"]
 
-# Download and install requirements for nginx compilation
+# Download and install requirements for entrypoint scripts and nginx compilation
 RUN apt-get update && \
-    apt-get install --no-install-recommends --no-upgrade --assume-yes ca-certificates dnsutils wget gcc make libpcre3-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
+    apt-get install --no-install-recommends --no-upgrade --assume-yes curl ca-certificates dnsutils wget gcc make libpcre3-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
 
 # Define components versions
 ENV LUA_RESTY_CORE 0.1.17
@@ -80,7 +80,8 @@ RUN ./configure --sbin-path=/usr/local/sbin \
 RUN make
 RUN make install
 
-# Install start script
+# Install start scripts
+COPY full_listing_cache_update.sh /full_listing_cache_update.sh
 COPY start.sh /start.sh
 
 # Install HTML browse includes

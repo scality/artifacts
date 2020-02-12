@@ -39,5 +39,8 @@ sed -e "s|\${AWS_BUCKET_PREFIX}|${AWS_BUCKET_PREFIX}|g" \
     -e "s|__SUPPORTED_CHARSET__|${supported_charset}|g" \
     /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
+# Launch updater
+/full_listing_cache_update.sh &
+
 # launch nginx
 exec /usr/local/sbin/nginx -g "daemon off;"

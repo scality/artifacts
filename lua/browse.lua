@@ -45,9 +45,50 @@ local function scan_tgt_buckets (build_tgt)
 end
 
 
+-- Return the content of a file.
+--
+local function read_file(path)
+    local file = io.open(path, "rb") -- r read mode and b binary mode
+
+    if not file then
+      return nil
+    end
+
+    local content = file:read "*a" -- *a or *all reads the whole file
+    file:close()
+
+    return content
+end
+
+
+-- Get entries from cache
+--
+local function get_lists_from_cache()
+  cached_listing = read_file("/var/artifacts_full_listing_cache/listing")
+  if cached_listing == nil then
+    return nil
+  end
+  local prefix = ""
+  if ngx.var.http_script_name ~= nil then
+    prefix = string.match(ngx.var.http_script_name, "[^/]+/[^/]+/[^/]+/"):gsub("/", ":")
+  end
+  local entries = {}
+  entries["cache_date"] = nil
+  entries["cache"] = {}
+  for object in cached_listing:gmatch("([^\r\n]+)[\r\n]+") do
+    if entries["cache_date"] ~= nil and (prefix == "" or object:sub(1, #prefix) == prefix) then
+      table.insert(entries["cache"], object)
+    else
+      entries["cache_date"] = object
+    end
+  end
+  return entries
+end
+
+
 -- Get entries from a list of buckets in parallel.
 --
-local function get_lists(delimiter, buckets)
+local function get_lists_from_upstream(delimiter, buckets)
   local open_buckets = buckets
 
   local markers = {}
@@ -82,22 +123,6 @@ local function get_lists(delimiter, buckets)
 end
 
 
--- Return the content of a file.
---
-local function read_file(path)
-    local file = io.open(path, "rb") -- r read mode and b binary mode
-
-    if not file then
-      return nil
-    end
-
-    local content = file:read "*a" -- *a or *all reads the whole file
-    file:close()
-
-    return content
-end
-
-
 -- Set the appropriate Content-Type header.
 --
 local function set_content_type(mode)
@@ -111,10 +136,13 @@ end
 
 -- Send header if needed.
 --
-local function render_header(mode)
+local function render_header(mode, cache_date)
   if mode == "html" then
     local fileContent = read_file("/etc/nginx/browse_header.html")
     ngx.print(fileContent)
+    if cache_date ~= nil then
+      ngx.print("<li class='list-group-item'><i>&nbsp;Listing delivered from cache (refreshed on " .. cache_date .. ") </i></li>\n")
+    end
   end
 end
 
@@ -124,18 +152,16 @@ end
 local function render_list(mode, entries, buckets)
   for i = 1, #buckets do
     local bucket_entries = entries[buckets[i]]
-    local output = ""
     for j = 1, #bucket_entries do
       local object = bucket_entries[j]
       if mode == "html" then
         rendered_object = ngx.escape_uri(object)
         rendered_object = rendered_object:gsub('%%2F', '/')
-        output = output .. "<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "'>" .. object .. "</a></li>\n"
+        ngx.print("<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "'>" .. object .. "</a></li>\n")
       else
-        output = output .. object .. "\n"
+	ngx.print(object .. "\n")
       end
     end
-    ngx.print(output)
   end
 end
 
@@ -150,9 +176,10 @@ local function render_footer(mode)
 end
 
 
-
 local browse_mode = ""
-if ngx.var.arg_format == nil or ngx.var.arg_format == "" or ngx.var.arg_format == "html" then
+if ngx.var.canonical_path == "" and ngx.var.full_listing_mode == "UPSTREAM" then
+  browse_mode = "text"
+elseif ngx.var.arg_format == nil or ngx.var.arg_format == "" or ngx.var.arg_format == "html" then
   browse_mode = "html"
 elseif ngx.var.arg_format == "text" then
   browse_mode = "text"
@@ -188,7 +215,22 @@ else
   buckets = { tgt_bucket }
 end
 
-entries = get_lists(delimiter, buckets)
+
+-- Grab entries from upstream or cache
+--
+local cache_date = nil
+if ngx.var.canonical_path == "" and ngx.var.full_listing_mode == "CACHE" and browse_mode == "html" then
+  entries = get_lists_from_cache()
+  if entries ~= nil then
+    cache_date = entries["cache_date"]
+    buckets = { "cache" }
+  else
+    entries = get_lists_from_upstream(delimiter, buckets)
+  end
+else
+  entries = get_lists_from_upstream(delimiter, buckets)
+end
+
 
 -- Tweak the response header.
 --
@@ -197,6 +239,6 @@ set_content_type(browse_mode)
 
 -- Send the response body.
 --
-render_header(browse_mode)
+render_header(browse_mode, cache_date)
 render_list(browse_mode, entries, buckets)
 render_footer(browse_mode)

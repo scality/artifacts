@@ -182,10 +182,37 @@ http {
       proxy_set_header Host $host;
     }
 
-
-    # Handle the browsing feature.
+    # Handle the builds listing refresh.
     #
-    location ~ ^/download/(|.*/)$ {
+    location ~ ^/refresh_full_listing/$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Process browse.
+      #
+      set $canonical_path "";
+      set $full_listing_mode "UPSTREAM";
+      content_by_lua_file /etc/nginx/browse.ljbc;
+    }
+
+    # Handle the builds listing.
+    #
+    location ~ ^/download/$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Process browse.
+      #
+      set $canonical_path "";
+      set $full_listing_mode "CACHE";
+      content_by_lua_file /etc/nginx/browse.ljbc;
+    }
+
+    # Handle the browsing inside a build.
+    #
+    location ~ ^/download/(.*/)$ {
       if ($request_method != GET) {
         return 400;
       }
