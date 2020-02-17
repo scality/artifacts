@@ -74,8 +74,8 @@ http {
     # to the "server" directive that uses the resolver to handle the
     # resolution. This may be ported to the open source version someday.
     #
-    server __S3_ENDPOINT__:443 max_fails=0;
-    server __S3_ENDPOINT__:443 max_fails=0;
+    server __S3_ENDPOINT_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
 
     # Max number of unused keep-alive connections kept open per worker process
     # for the pool.
@@ -270,7 +270,7 @@ http {
       # Mandatory otherwise the upstream name will be considered as a part of
       # the uri when the resquest will be processed in the upstream.
       #
-      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+      proxy_set_header Host $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
 
       # Enabled keep-alive to backend.
       #
@@ -278,7 +278,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass https://keepalivepool/?prefix=$encoded_prefix&delimiter=$arg_delimiter&marker=$arg_marker;
+      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/?prefix=$encoded_prefix&delimiter=$arg_delimiter&marker=$arg_marker;
 
       # Filter out XML in raw format.
       #
@@ -355,7 +355,7 @@ http {
       # Mandatory otherwise the upstream name will be considered as a part of
       # the uri when the resquest will be processed in the upstream.
       #
-      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+      proxy_set_header Host $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
 
       # Enabled keep-alive to backend.
       #
@@ -384,7 +384,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass https://keepalivepool/$encoded_key;
+      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/$encoded_key;
     }
 
     # Copy an object wih the following syntax:
@@ -429,7 +429,7 @@ http {
       # Mandatory otherwise the upstream name will be considered as a part of
       # the uri when the resquest will be processed in the upstream.
       #
-      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+      proxy_set_header Host $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
 
       # Enabled keep-alive to backend.
       #
@@ -437,7 +437,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass https://keepalivepool/$encoded_key;
+      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/$encoded_key;
     }
 
     # Copy a build.
@@ -502,7 +502,7 @@ http {
       # Mandatory otherwise the upstream name will be considered as a part of
       # the uri when the resquest will be processed in the upstream.
       #
-      proxy_set_header Host $aws_tgt_bucket.storage.googleapis.com;
+      proxy_set_header Host $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
 
       # Enabled keep-alive to backend.
       #
@@ -516,7 +516,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass https://keepalivepool/$encoded_key;
+      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/$encoded_key;
     }
   }
 }

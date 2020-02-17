@@ -20,6 +20,10 @@ cloudStorage:
   ##
   awsbucketprefix: ""
 
+  ## endpointUrl contains the S3 endpoint url to access the cloud storage.
+  ##
+  endpointUrl: https://storage.googleapis.com
+
 image:
   ## regitry to pull from.
   ##

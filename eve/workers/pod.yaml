@@ -1,0 +1,79 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: worker
+spec:
+  hostAliases:
+  - ip: "127.0.0.1"
+    hostnames:
+    - "cloudserver-front"
+    - "artifacts"
+  containers:
+    - name: build-worker
+      image: "{{ images.worker }}"
+      command: ["/bin/sh"]
+      args: ["-c", "buildbot-worker create-worker . ${BUILDMASTER}:${BUILDMASTER_PORT} ${WORKERNAME} ${WORKERPASS} && buildbot-worker start --nodaemon"]
+      resources:
+        requests:
+          cpu: "250m"
+          memory: 1Gi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+      volumeMounts:
+        - name: worker-workspace
+          mountPath: /home/workspace
+    - name: artifacts
+      image: "{{ images.artifacts }}"
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 1Gi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+      env:
+        - name: AWS_SECRET_ACCESS_KEY
+          value: verySecretKey1
+        - name: AWS_ACCESS_KEY_ID
+          value: accessKey1
+        - name: AWS_BUCKET_PREFIX
+          value: artifacts
+        - name: ENDPOINT_URL
+          value: http://cloudserver-front:8000
+        - name: AWS_XML_NS
+          value: http://s3.amazonaws.com/doc/2006-03-01/
+      volumeMounts:
+        - name: artifacts-workspace
+          mountPath: /data/nginx
+    - name: cloudserver
+      image: zenko/cloudserver:8.1.2
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 1Gi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+      volumeMounts:
+        - name: cloudserver-data
+          mountPath: /usr/src/app/localData
+        - name: cloudserver-metadata
+          mountPath: /usr/src/app/localMetadata
+      env:
+        - name: REMOTE_MANAGEMENT_DISABLE
+          value: "1"
+        - name: LOG_LEVEL
+          value: debug
+        - name: ENDPOINT
+          value: "cloudserver-front"
+  volumes:
+    - name: worker-workspace
+      emptyDir: {}
+    - name: artifacts-workspace
+      emptyDir: {}
+    - name: cloudserver-data
+      emptyDir: {}
+    - name: cloudserver-metadata
+      emptyDir: {}
