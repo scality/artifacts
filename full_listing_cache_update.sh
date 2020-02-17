@@ -5,6 +5,12 @@ chmod 755 /var/artifacts_full_listing_cache
 
 while true
 do
+  curl http://localhost/ --max-time 1 --silent --fail > /dev/null 2>&1 && break
+  sleep 1
+done
+
+while true
+do
   tmp_file=$(mktemp -p /var/artifacts_full_listing_cache)
   chmod 644 ${tmp_file}
   date --utc > ${tmp_file}
