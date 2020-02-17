@@ -141,7 +141,7 @@ local function render_header(mode, cache_date)
     local fileContent = read_file("/etc/nginx/browse_header.html")
     ngx.print(fileContent)
     if cache_date ~= nil then
-      ngx.print("<li class='list-group-item'><i>&nbsp;Listing delivered from cache (refreshed on " .. cache_date .. ") </i></li>\n")
+      ngx.print("<p align='right'><i>refreshed on " .. cache_date .. "&nbsp;&nbsp;</i></p>\n")
     end
   end
 end
@@ -150,6 +150,9 @@ end
 -- Send the entries in the appropriate format.
 --
 local function render_list(mode, entries, buckets)
+  if mode == "html" then
+    ngx.print("<ul class='list-group'>\n")
+  end
   for i = 1, #buckets do
     local bucket_entries = entries[buckets[i]]
     for j = 1, #bucket_entries do
@@ -162,6 +165,9 @@ local function render_list(mode, entries, buckets)
 	ngx.print(object .. "\n")
       end
     end
+  end
+  if mode == "html" then
+    ngx.print("</ul>\n")
   end
 end
 
