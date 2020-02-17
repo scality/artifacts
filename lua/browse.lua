@@ -64,7 +64,7 @@ end
 -- Get entries from cache
 --
 local function get_lists_from_cache()
-  cached_listing = read_file("/var/artifacts_full_listing_cache/listing")
+  cached_listing = read_file("/data/nginx/artifacts_full_listing_cache/listing")
   if cached_listing == nil then
     return nil
   end
