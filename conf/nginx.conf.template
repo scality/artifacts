@@ -1,6 +1,7 @@
 # Reverse-proxy configuration for listing, download, upload, redirect
-# operations on a Google Cloud Storage S3 compatible bucket, with an
-# additional feature to find build depending on prefix and status.
+# operations on a Google Cloud Storage S3 compatible bucket, with some
+# additional features to find build depending on prefix and status, and
+# to trigger batch copy operations.
 
 # Google Cloud Storage S3 compatible credentials.
 env AWS_ACCESS_KEY_ID;
