@@ -76,10 +76,10 @@ local function get_lists_from_cache()
   entries["cache_date"] = nil
   entries["cache"] = {}
   for object in cached_listing:gmatch("([^\r\n]+)[\r\n]+") do
-    if entries["cache_date"] ~= nil and (prefix == "" or object:sub(1, #prefix) == prefix) then
-      table.insert(entries["cache"], object)
-    else
+    if entries["cache_date"] == nil then
       entries["cache_date"] = object
+    elseif prefix == "" or object:sub(1, #prefix) == prefix then
+      table.insert(entries["cache"], object)
     end
   end
   return entries
