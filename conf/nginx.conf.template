@@ -156,12 +156,16 @@ http {
       rewrite ^/builds/(.*)$ /download/$1 last;
     }
 
+    # Redirect a url listing a container not ended by a slash to the same url
+    # with a trailing slash.
+    #
+    rewrite ^/builds/([^/]+)$ $http_script_name/builds/$1/ permanent;
+    rewrite ^/download/([^/]+)$ $http_script_name/download/$1/ permanent;
+
     # Redirect "/" location to "/builds/" to keep backward compatibility
     # with the previous artifacts implementations.
     #
-    location ~ ^/$ {
-      return 302 $http_script_name/builds/;
-    }
+    rewrite ^/$ $http_script_name/builds/ permanent;
 
     # Hack
     #
