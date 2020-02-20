@@ -186,7 +186,7 @@ http {
     # Handle the builds listing refresh.
     #
     location ~ ^/refresh_full_listing/$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -200,7 +200,7 @@ http {
     # Handle the builds listing.
     #
     location ~ ^/download/$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -214,7 +214,7 @@ http {
     # Handle the browsing inside a build.
     #
     location ~ ^/download/(.*/)$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -240,7 +240,7 @@ http {
     #   marker
     #   bucket
     location ~ ^/browse_raw/(|.*/)$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -291,7 +291,7 @@ http {
     # Redirect to an object.
     #
     location ~ ^/redirect/([^/]+/.*[^/])$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -325,7 +325,7 @@ http {
     # Download an object.
     #
     location ~ ^/download/([^/]+/.*[^/])$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -444,7 +444,7 @@ http {
     # Copy a build.
     #
     location ~ ^/copy/[^/]+/[^/]+/$ {
-      if ($request_method != GET) {
+      if ($request_method !~  ^(GET|HEAD)$) {
         return 400;
       }
 

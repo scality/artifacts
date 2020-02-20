@@ -57,3 +57,27 @@ class TestSimple(unittest.TestCase):
             sha_download = hashlib.sha256(fd.read()).hexdigest()
 
         assert sha_download == sha_upload
+
+    def test_simple_last_success_get_head(self):
+        # Uploading a generated file
+        filename = tempfile.mktemp()
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container,
+            filename=filename
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success)
+        assert upload.status_code == 200
+        head = requests.head('{artifacts_url}/last_success/{container}'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert head.headers['Location'] == '/download/{container}/'.format(
+            container=self.container)
+        assert head.status_code == 302
+        get = requests.get('{artifacts_url}/last_success/{container}'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
