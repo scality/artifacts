@@ -59,12 +59,9 @@ class TestSimple(unittest.TestCase):
         assert sha_download == sha_upload
 
     def test_simple_last_success_get_head(self):
-        # Uploading a generated file
-        filename = tempfile.mktemp()
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
             artifacts_url=self.artifacts_url,
-            container=self.container,
-            filename=filename
+            container=self.container
         )
         success = 'SUCCESSFUL'.encode('utf-8')
         upload = requests.put(url, data=success)
