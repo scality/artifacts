@@ -78,3 +78,53 @@ class TestSimple(unittest.TestCase):
             container=self.container
         ))
         assert get.status_code == 200
+
+    def test_simple_redirections(self):
+        req = requests.head('{artifacts_url}/'.format(
+            artifacts_url=self.artifacts_url
+        ), headers={'Script-Name': '/foo'})
+        assert req.headers['Location'] == '{artifacts_url}/foo/builds/'.format(
+            artifacts_url=self.artifacts_url)
+        assert req.status_code == 301
+
+        req = requests.head('{artifacts_url}/download/{container}'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert req.headers['Location'] == '{artifacts_url}/foo/download/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container)
+        assert req.status_code == 301
+
+        req = requests.head('{artifacts_url}/builds/{container}'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert req.headers['Location'] == '{artifacts_url}/foo/builds/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container)
+        assert req.status_code == 301
+
+        req = requests.head('{artifacts_url}/download/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert 'Location' not in req.headers
+
+        req = requests.head('{artifacts_url}/builds/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert 'Location' not in req.headers
+
+        req = requests.head('{artifacts_url}/download/{container}/bar'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert 'Location' not in req.headers
+
+        req = requests.head('{artifacts_url}/builds/{container}/bar'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert 'Location' not in req.headers
