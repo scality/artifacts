@@ -5,6 +5,7 @@ import requests
 import tempfile
 import hashlib
 import os
+import time
 
 from boto3.exceptions import S3UploadFailedError
 from botocore.exceptions import EndpointConnectionError
@@ -42,7 +43,7 @@ class TestSimple(unittest.TestCase):
             ) as e:
                 if attempt == retries:
                     raise
-                pass
+                time.sleep(1)
         os.remove(filename)
 
     def setUp(self):
