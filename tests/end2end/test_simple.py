@@ -5,7 +5,10 @@ import requests
 import tempfile
 import hashlib
 import os
+import time
 
+from boto3.exceptions import S3UploadFailedError
+from botocore.exceptions import EndpointConnectionError
 
 @pytest.mark.usefixtures("s3_client", "container", "artifacts_url", "buckets")
 class TestSimple(unittest.TestCase):
@@ -18,7 +21,36 @@ class TestSimple(unittest.TestCase):
             self.s3_client.delete_object(Bucket=bucket, Key=obj['Key'])
         self.s3_client.delete_bucket(Bucket=bucket)
 
+    def s3_healthcheck(self):
+        """Ensure S3 backend is alive.
+
+        The goal of this function is to ensure that the S3 backend is functionning
+        well before starting any kind of tests to avoid race conditions.
+        """
+        # ensure S3 backend is alive
+        retries = 10
+        bucket = 'artifacts-healthcheck'
+        filename = tempfile.mktemp()
+        with open(filename, 'wb+') as fd:
+            fd.write(os.urandom(1024))
+        for attempt in range(retries):
+            try:
+                self.s3_client.create_bucket(Bucket=bucket)
+                self.s3_client.upload_file(filename, bucket, filename)
+                self.delete_bucket(bucket)
+                break
+            except (
+                S3UploadFailedError,
+                EndpointConnectionError
+            ) as e:
+                time.sleep(attempt)
+                if attempt == retries:
+                    raise
+                pass
+        os.remove(filename)
+
     def setUp(self):
+        self.s3_healthcheck()
         for bucket in self.buckets:
             self.s3_client.create_bucket(Bucket=bucket)
 
