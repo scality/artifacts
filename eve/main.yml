@@ -22,18 +22,5 @@ stages:
         retryFetch: true
         haltOnFailure: true
     - ShellCommand:
-        name: wait for cloudserver
-        command: |
-          # even if cloudserver healthcheck is OK,
-          # it seems like we need a little bit more time
-          # before we start the tests.
-          # Therefore we are adding a little sleepy sleep.
-          curl http://localhost:8000/_/healthcheck/deep \
-          --retry 20 \
-          --retry-delay 5 \
-          --retry-connrefused \
-          --fail
-          sleep 10
-    - ShellCommand:
         name: test artifacts
         command: pytest
