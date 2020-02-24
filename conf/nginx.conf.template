@@ -130,6 +130,11 @@ http {
     location ~ ^/latest/(.*)$ {
       set $prefix $1;
       set $expected_status "";
+
+      if ($request_method !~ ^(GET|HEAD)$) {
+        return 400;
+      }
+
       rewrite_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
@@ -138,6 +143,11 @@ http {
     location ~ ^/last_success/(.*)$ {
       set $prefix $1;
       set $expected_status "SUCCESSFUL";
+
+      if ($request_method !~ ^(GET|HEAD)$) {
+        return 400;
+      }
+
       rewrite_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
@@ -146,6 +156,11 @@ http {
     location ~ ^/last_failure/(.*)$ {
       set $prefix $1;
       set $expected_status "FAILED";
+
+      if ($request_method !~ ^(GET|HEAD)$) {
+        return 400;
+      }
+
       rewrite_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
@@ -190,7 +205,13 @@ http {
     # Handle the builds listing refresh.
     #
     location ~ ^/refresh_full_listing/$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Not allowed from outside the container.
+      #
+      if ($remote_addr != 127.0.0.1) {
         return 400;
       }
 
@@ -204,7 +225,7 @@ http {
     # Handle the builds listing.
     #
     location ~ ^/download/$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method !~ ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -218,7 +239,7 @@ http {
     # Handle the browsing inside a build.
     #
     location ~ ^/download/(.*/)$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method !~ ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -244,7 +265,13 @@ http {
     #   marker
     #   bucket
     location ~ ^/browse_raw/(|.*/)$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Not allowed from outside the container.
+      #
+      if ($remote_addr != 127.0.0.1) {
         return 400;
       }
 
@@ -295,7 +322,7 @@ http {
     # Redirect to an object.
     #
     location ~ ^/redirect/([^/]+/.*[^/])$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method !~ ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -329,7 +356,7 @@ http {
     # Download an object.
     #
     location ~ ^/download/([^/]+/.*[^/])$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method !~ ^(GET|HEAD)$) {
         return 400;
       }
 
@@ -401,6 +428,8 @@ http {
         return 400;
       }
 
+      # Not allowed from outside the container.
+      #
       if ($remote_addr != 127.0.0.1) {
         return 400;
       }
@@ -448,8 +477,14 @@ http {
     # Copy a build.
     #
     location ~ ^/copy/[^/]+/[^/]+/$ {
-      if ($request_method !~  ^(GET|HEAD)$) {
+      if ($request_method != GET) {
         return 400;
+      }
+
+      # Not allowed behind ingress.
+      #
+      if ($http_script_name) {
+        return 403;
       }
 
       # Canonicalize key.
@@ -471,6 +506,12 @@ http {
     location ~ ^/upload/([^/]+/.*[^/])$ {
       if ($request_method != PUT) {
         return 400;
+      }
+
+      # Not allowed behind ingress.
+      #
+      if ($http_script_name) {
+        return 403;
       }
 
       # Canonicalize key.
