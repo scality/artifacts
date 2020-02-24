@@ -164,13 +164,6 @@ http {
       rewrite_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
-    # Handle "/builds/" location to keep backward compatibility with the
-    # previous artifacts implementations.
-    #
-    location ~ ^/builds/ {
-      rewrite ^/builds/(.*)$ /download/$1 last;
-    }
-
     # Redirect a url listing a container not ended by a slash to the same url
     # with a trailing slash.
     #
@@ -181,6 +174,11 @@ http {
     # with the previous artifacts implementations.
     #
     rewrite ^/$ $http_script_name/builds/ permanent;
+
+    # Handle "/builds/" location to keep backward compatibility with the
+    # previous artifacts implementations.
+    #
+    rewrite ^/builds/(.*)$ /download/$1 last;
 
     # Hack
     #
