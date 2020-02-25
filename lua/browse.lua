@@ -110,11 +110,16 @@ local function get_lists_from_upstream(delimiter, buckets)
         for object in res[i].body:gmatch("([^\r\n]+)[\r\n]+") do
           if object:sub(1,1) == '>' then
             table.insert(next_buckets, open_buckets[i])
-	    markers[open_buckets[i]] = object:sub(2, #object)
+            markers[open_buckets[i]] = object:sub(2, #object)
             break
           end
           table.insert(entries[open_buckets[i]], object)
         end
+      elseif res[i].status == 502 or res[i].status == 503 then
+        ngx.sleep(1)
+        table.insert(next_buckets, open_buckets[i])
+      else
+        ngx.exit(ngx.HTTP_BAD_GATEWAY)
       end
     end
     open_buckets = next_buckets
