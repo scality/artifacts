@@ -50,8 +50,17 @@ end
 
 -- Process each object listed in build_src.
 --
+ngx.say("Listing objects from the source reference '" .. build_src .. "'")
 url = "/force_real_request/download/" .. build_src .. "/?format=txt"
 res = ngx.location.capture(url)
+if res.status == 200 then
+  ngx.say('DONE')
+  ngx.flush(true)
+else
+  ngx.say('FAILED')
+  ngx.flush(true)
+  return
+end
 for object in res.body:gmatch("([^\r\n]+)[\r\n]+") do
   local object_url, object_res
 
