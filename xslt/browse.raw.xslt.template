@@ -7,6 +7,7 @@
 </xsl:template>
 
 <xsl:template match="dir:ListBucketResult">
+	<xsl:text>&#60;&#xa;</xsl:text>
 	<xsl:for-each select="dir:CommonPrefixes">
 		<xsl:value-of select="substring-after(dir:Prefix, $listing_path)"/>
 		<xsl:text>&#xa;</xsl:text>
