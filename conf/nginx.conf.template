@@ -102,9 +102,9 @@ http {
   #
   proxy_next_upstream error timeout http_502 http_503;
 
-  # Limit number of retries to 5.
+  # Limit number of retries to 16.
   #
-  proxy_next_upstream_tries 5;
+  proxy_next_upstream_tries 16;
 
   # This map will be used to force a "Content-type" header depending on the
   # proxyfied object extension. If no extension is found or no extension is
