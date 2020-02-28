@@ -110,6 +110,20 @@ class TestSimple(unittest.TestCase):
         copy = requests.get(url, data=success, headers={'Script-Name': '/foo'})
         assert copy.status_code == 403
 
+        # Upload without ingress and download with ingress
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success)
+        assert upload.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert get.status_code == 200
+
     def test_listing_inside_a_build(self):
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
             artifacts_url=self.artifacts_url,
