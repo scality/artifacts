@@ -110,6 +110,25 @@ class TestSimple(unittest.TestCase):
         copy = requests.get(url, data=success, headers={'Script-Name': '/foo'})
         assert copy.status_code == 403
 
+    def test_listing_inside_a_build(self):
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success)
+        assert upload.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}_do_not_exist/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 404
+
     def test_simple_last_success_get_head(self):
 
         # Test a direct upload

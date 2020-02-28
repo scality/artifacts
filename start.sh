@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# make lua libs available
+# Make lua libs available
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 # Defaulting to google cloud storage S3 compatible endpoint
 ENDPOINT_URL=${ENDPOINT_URL:=https://storage.googleapis.com}
 
-# generate xslt file (by default, set it up for Google Cloud Storage use)
+# Generate xslt file (by default, set it up for Google Cloud Storage use)
 # For Google Cloud Storage: http://doc.s3.amazonaws.com/2006-03-01
 # For CLoud Server: http://s3.amazonaws.com/doc/2006-03-01/
 AWS_XML_NS=${AWS_XML_NS:=http://doc.s3.amazonaws.com/2006-03-01}
@@ -38,10 +38,10 @@ if [[ ${S3_ENDPOINT_PORT} == "" ]]; then
     fi
 fi
 
-# define supported charset
+# Define supported charset
 supported_charset='\/0-9a-zA-Z_ ,:@=\\-\\.\\+\\~\\(\\)\;\&'
 
-# generate mime types map file
+# Generate mime types map file
 mimetypes_raw=$(tr -d '\r\n' < /etc/nginx/mime.types | sed -E 's/^[^\{]*\{(.*)\}[^\{]*$/\1/' | sed -E 's/\s+/ /g' | sed -E 's/;\s/;/g' | sed -E 's/^\s//')
 IFS=';'
 read -ra MIMETYPES <<< "$mimetypes_raw"
@@ -56,8 +56,10 @@ do
         echo "."$j" "${MIMETYPE[0]}";" >> /etc/nginx/mimetypes.map
     done
 done
+echo ".log text/plain;" >> /etc/nginx/mimetypes.map
+echo ".stdout text/plain;" >> /etc/nginx/mimetypes.map
+echo ".stderr text/plain;" >> /etc/nginx/mimetypes.map
 echo "}" >> /etc/nginx/mimetypes.map
-
 
 # Debugging options
 echo "ENDPOINT_URL: ${ENDPOINT_URL}"
@@ -71,7 +73,7 @@ echo "AWS_XML_NS: ${AWS_XML_NS}"
 sed -e "s|__AWS_XML_NS__|${AWS_XML_NS}|g" \
     /etc/nginx/browse.raw.xslt.template > /etc/nginx/browse.raw.xslt
 
-# generate nginx configuration
+# Generate nginx configuration
 sed -e "s|\${AWS_BUCKET_PREFIX}|${AWS_BUCKET_PREFIX}|g" \
     -e "s|__S3_ENDPOINT_IPV4__|${S3_ENDPOINT_IPV4}|g" \
     -e "s|__S3_ENDPOINT_URL__|${S3_ENDPOINT_URL}|g" \
@@ -85,5 +87,5 @@ sed -e "s|\${AWS_BUCKET_PREFIX}|${AWS_BUCKET_PREFIX}|g" \
 # Launch updater
 /full_listing_cache_update.sh &
 
-# launch nginx
+# Launch nginx
 exec /usr/local/sbin/nginx -g "daemon off;"
