@@ -108,6 +108,18 @@ class TestSimple(unittest.TestCase):
             container=self.container
         ))
         assert get.status_code == 404
+        get = requests.get('{artifacts_url}/download/{container}_do_not_exist/?format=txt'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content == b""
+        get = requests.get('{artifacts_url}/download/{container}_do_not_exist/?format=text'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content == b""
 
     def test_simple_last_success_get_head(self):
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
