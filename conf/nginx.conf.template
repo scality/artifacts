@@ -51,7 +51,7 @@ http {
   # The upstream will handle a pool of keep-alive connections to the backend
   # and it will also be used to handle the retries on backend errors.
   #
-  upstream keepalivepool {
+  upstream ${AWS_BUCKET_PREFIX}-staging {
 
     # We set up a pool of two servers which both define the same backend in
     # order to give to the retry mechanism (configured in /download and /upload
@@ -75,8 +75,8 @@ http {
     # to the "server" directive that uses the resolver to handle the
     # resolution. This may be ported to the open source version someday.
     #
-    server __S3_ENDPOINT_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
-    server __S3_ENDPOINT_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
 
     # Max number of unused keep-alive connections kept open per worker process
     # for the pool.
@@ -89,6 +89,24 @@ http {
 
     # Max time of inactivity per connection.
     #
+    keepalive_timeout 60s;
+  }
+
+  upstream ${AWS_BUCKET_PREFIX}-prolonged {
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+
+    keepalive 16;
+    keepalive_requests 256;
+    keepalive_timeout 60s;
+  }
+
+  upstream ${AWS_BUCKET_PREFIX}-promoted {
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+
+    keepalive 16;
+    keepalive_requests 256;
     keepalive_timeout 60s;
   }
 
@@ -283,7 +301,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/?prefix=$encoded_prefix&delimiter=$arg_delimiter&marker=$arg_marker;
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/?prefix=$encoded_prefix&delimiter=$arg_delimiter&marker=$arg_marker;
 
       # Filter out XML in raw format.
       #
@@ -389,7 +407,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/$encoded_key;
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
     }
 
     # Copy an object wih the following syntax:
@@ -442,7 +460,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/$encoded_key;
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
     }
 
     # Copy a build.
@@ -521,7 +539,7 @@ http {
 
       # Proxy request to upstream "keepalivepool".
       #
-      proxy_pass __S3_ENDPOINT_PROTO__keepalivepool/$encoded_key;
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
     }
   }
 }
