@@ -111,9 +111,12 @@ local function get_lists_from_upstream(delimiter, buckets)
     for i=1, #res do
       if res[i].status == 200 then
         for object in res[i].body:gmatch("([^\r\n]+)[\r\n]+") do
+          -- Ignore the '<' line specifically added by xlst to avoid the output to be empty,
+          -- as this would generate a 500 error within nginx.
           if object:sub(1,1) ~= '<' then
             if object:sub(1,1) == '>' then
               local marker = object:sub(2, #object)
+              -- Protection against a buggy backend that do not send the NextMarker.
               if marker ~= "" then
                 table.insert(next_buckets, open_buckets[i])
                 markers[open_buckets[i]] = object:sub(2, #object)
