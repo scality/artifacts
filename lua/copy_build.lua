@@ -16,7 +16,7 @@ end
 
 -- Check that build_tgt is empty
 --
-ngx.say("Cheking if the target reference '" .. build_tgt .. "' is empty")
+ngx.say("Checking if the target reference '" .. build_tgt .. "' is empty")
 ngx.flush(true)
 url = "/force_real_request/download/" .. build_tgt .. "/?format=txt"
 res = ngx.location.capture(url)

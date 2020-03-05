@@ -86,7 +86,7 @@ class TestSimple(unittest.TestCase):
             filename=filename
         )
         with open(download_file, 'wb+') as fd:
-            download = requests.get(url)
+            download = requests.get(url, headers={'ForceCacheUpdate': 'yes'})
             assert download.status_code == 200
             fd.write(download.content)
             sha_download = hashlib.sha256(fd.read()).hexdigest()
@@ -124,10 +124,10 @@ class TestSimple(unittest.TestCase):
         get = requests.get('{artifacts_url}/download/{container}/.final_status'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
-        ), headers={'Script-Name': '/foo'})
+        ), headers={'Script-Name': '/foo', 'ForceCacheUpdate': 'yes'})
         assert get.status_code == 200
 
-    def test_listing_inside_a_build(self):
+    def test_simple_listing_inside_a_build(self):
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
@@ -183,8 +183,91 @@ class TestSimple(unittest.TestCase):
         ))
         assert get.status_code == 500
 
-    def test_simple_last_success_get_head(self):
+    def test_simple_build_copy(self):
 
+        # Due to a zenko cloud server bug, we can not succeed a copy with a build that has more than 1000 objects
+        # Let's try with 512 objects
+        for i in range(512):
+            url = '{artifacts_url}/upload/{container}/obj-{suffix}'.format(
+                artifacts_url=self.artifacts_url,
+                container=self.container,
+                suffix=i
+            )
+            success = 'SUCCESSFUL'.encode('utf-8')
+            upload = requests.put(url, data=success)
+            assert upload.status_code == 200
+
+        get = requests.get('{artifacts_url}/copy/{container}/copy_of_{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content.splitlines()[-1] == b'SOURCE BUILD NOT FINISHED (NO ".final_status" FOUND), ABORTING'
+
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+                artifacts_url=self.artifacts_url,
+                container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success)
+        assert upload.status_code == 200
+
+        # Refresh artifacts cache for .final_status
+        get = requests.get('{artifacts_url}/download/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'ForceCacheUpdate': 'yes'})
+        assert get.status_code == 200
+
+        get = requests.get('{artifacts_url}/copy/{container}/copy_of_{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content.splitlines()[-1] == b'BUILD COPIED'
+
+        # Compare source and target listings
+        get_src = requests.get('{artifacts_url}/download/{container}/?format=text'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        get_tgt = requests.get('{artifacts_url}/download/copy_of_{container}/?format=text'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get_src.status_code == 200
+        assert get_tgt.status_code == 200
+        assert get_src.content == get_tgt.content
+
+        # This should fail because copy already exists
+        get = requests.get('{artifacts_url}/copy/{container}/copy_of_{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content.splitlines()[-2] == b'Checking if the target reference \'copy_of_%b\' is empty' % bytes(self.container, encoding='utf-8')
+        assert get.content.splitlines()[-1] == b'FAILED'
+
+        # Let's use the zenko cloud server bug and see how copy reacts on a failed source listing
+        for i in range(512, 1024):
+            url = '{artifacts_url}/upload/{container}/obj-{suffix}'.format(
+                artifacts_url=self.artifacts_url,
+                container=self.container,
+                suffix=i
+            )
+            success = 'SUCCESSFUL'.encode('utf-8')
+            upload = requests.put(url, data=success)
+            assert upload.status_code == 200
+        get = requests.get('{artifacts_url}/copy/{container}/copy_2_of_{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content.splitlines()[-2] == b'Listing objects from the source reference \'%b\'' % bytes(self.container, encoding='utf-8')
+        assert get.content.splitlines()[-1] == b'FAILED'
+
+
+    def test_simple_last_success_get_head(self):
         # Test a direct upload
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
             artifacts_url=self.artifacts_url,
@@ -193,6 +276,13 @@ class TestSimple(unittest.TestCase):
         success = 'SUCCESSFUL'.encode('utf-8')
         upload = requests.put(url, data=success)
         assert upload.status_code == 200
+
+        # Refresh artifacts cache for .final_status
+        get = requests.get('{artifacts_url}/download/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'ForceCacheUpdate': 'yes'})
+        assert get.status_code == 200
 
         # Check HEAD and GET on the object uploaded
         head = requests.head('{artifacts_url}/last_success/{container}'.format(
