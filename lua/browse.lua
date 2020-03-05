@@ -113,9 +113,14 @@ local function get_lists_from_upstream(delimiter, buckets)
         for object in res[i].body:gmatch("([^\r\n]+)[\r\n]+") do
           if object:sub(1,1) ~= '<' then
             if object:sub(1,1) == '>' then
-              table.insert(next_buckets, open_buckets[i])
-              markers[open_buckets[i]] = object:sub(2, #object)
-              break
+              local marker = object:sub(2, #object)
+              if marker ~= "" then
+                table.insert(next_buckets, open_buckets[i])
+                markers[open_buckets[i]] = object:sub(2, #object)
+                break
+              end
+              ngx.log(ngx.ERR, "listing truncated but no NextMarker available, sending back 500")
+              ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
             end
             table.insert(entries[open_buckets[i]], object)
           end

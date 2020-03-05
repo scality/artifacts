@@ -15,10 +15,13 @@ class TestSimple(unittest.TestCase):
 
     def delete_bucket(self, bucket):
         """Utility function to delete a non empty bucket."""
-        objects = self.s3_client.list_objects(Bucket=bucket)
-        content = objects.get('Contents', [])
-        for obj in content:
-            self.s3_client.delete_object(Bucket=bucket, Key=obj['Key'])
+        while True:
+            objects = self.s3_client.list_objects(Bucket=bucket)
+            content = objects.get('Contents', [])
+            if len(content) == 0:
+                break
+            for obj in content:
+                self.s3_client.delete_object(Bucket=bucket, Key=obj['Key'])
         self.s3_client.delete_bucket(Bucket=bucket)
 
     def s3_healthcheck(self):
@@ -90,7 +93,7 @@ class TestSimple(unittest.TestCase):
 
         assert sha_download == sha_upload
 
-    def test_upload_and_copy_behind_ingress(self):
+    def test_simple_upload_and_copy_behind_ingress(self):
 
         # Mimic an upload behind the ingress
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
@@ -154,6 +157,31 @@ class TestSimple(unittest.TestCase):
         ))
         assert get.status_code == 200
         assert get.content == b""
+
+        # Listing more than 1000 keys
+        for i in range(1024):
+            url = '{artifacts_url}/upload/{container}/obj-{suffix}'.format(
+                artifacts_url=self.artifacts_url,
+                container=self.container,
+                suffix=i
+            )
+            success = 'SUCCESSFUL'.encode('utf-8')
+            upload = requests.put(url, data=success)
+            assert upload.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}/?format=text'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert len(get.content.splitlines()) == 1025
+
+        # Trigger a zenko cloud server bug (no NextMarker received for a truncated listing when no Delimiter is sent)
+        # Check that artifacts sends a 500 instead of processing an infinite loop
+        get = requests.get('{artifacts_url}/download/{container}/?format=txt'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 500
 
     def test_simple_last_success_get_head(self):
 
