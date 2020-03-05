@@ -61,10 +61,17 @@ else
   ngx.flush(true)
   return
 end
+
+local total_number_of_objects = 0
+for object in res.body:gmatch("([^\r\n]+)[\r\n]+") do
+  total_number_of_objects = total_number_of_objects + 1
+end
+local current_object = 0
 for object in res.body:gmatch("([^\r\n]+)[\r\n]+") do
   local object_url, object_res
 
-  ngx.say("Copying " .. object .. " ... ")
+  current_object = current_object + 1
+  ngx.say("[" .. current_object .. "/" .. total_number_of_objects .. "] Copying " .. object .. " ... ")
   ngx.flush(true)
 
   object_url = "/force_real_request/copy/" .. build_src .. "/" .. build_tgt .. "/" .. object
