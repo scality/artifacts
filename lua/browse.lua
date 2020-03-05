@@ -245,6 +245,13 @@ else
 end
 
 
+-- Send HTTP 404 if needed, for browser only
+--
+if ngx.var.canonical_path ~= "" and #entries[buckets[1]] == 0 and browse_mode == "html" then
+  ngx.exit(ngx.HTTP_NOT_FOUND)
+end
+
+
 -- Tweak the response header.
 --
 set_content_type(browse_mode)

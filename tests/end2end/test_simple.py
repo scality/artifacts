@@ -90,7 +90,27 @@ class TestSimple(unittest.TestCase):
 
         assert sha_download == sha_upload
 
-    def test_simple_last_success_get_head(self):
+    def test_upload_and_copy_behind_ingress(self):
+
+        # Mimic an upload behind the ingress
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success, headers={'Script-Name': '/foo'})
+        assert upload.status_code == 403
+
+        # Mimic a copy behind the ingress
+        url = '{artifacts_url}/copy/{container}/copy_of_{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        copy = requests.get(url, data=success, headers={'Script-Name': '/foo'})
+        assert copy.status_code == 403
+
+        # Upload without ingress and download with ingress
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
@@ -98,6 +118,55 @@ class TestSimple(unittest.TestCase):
         success = 'SUCCESSFUL'.encode('utf-8')
         upload = requests.put(url, data=success)
         assert upload.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ), headers={'Script-Name': '/foo'})
+        assert get.status_code == 200
+
+    def test_listing_inside_a_build(self):
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success)
+        assert upload.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        get = requests.get('{artifacts_url}/download/{container}_do_not_exist/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 404
+        get = requests.get('{artifacts_url}/download/{container}_do_not_exist/?format=txt'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content == b""
+        get = requests.get('{artifacts_url}/download/{container}_do_not_exist/?format=text'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+        assert get.content == b""
+
+    def test_simple_last_success_get_head(self):
+
+        # Test a direct upload
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = requests.put(url, data=success)
+        assert upload.status_code == 200
+
+        # Check HEAD and GET on the object uploaded
         head = requests.head('{artifacts_url}/last_success/{container}'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
