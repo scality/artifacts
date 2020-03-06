@@ -168,26 +168,28 @@ class TestSimple(unittest.TestCase):
             success = 'SUCCESSFUL'.encode('utf-8')
             upload = requests.put(url, data=success)
             assert upload.status_code == 200
-        get = requests.get('{artifacts_url}/download/{container}/?format=text'.format(
+        get_text = requests.get('{artifacts_url}/download/{container}/?format=text'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
         ))
-        assert get.status_code == 200
-        assert len(get.content.splitlines()) == 1025
+        assert get_text.status_code == 200
+        assert len(get_text.content.splitlines()) == 1025
 
         # Trigger a zenko cloud server bug (no NextMarker received for a truncated listing when no Delimiter is sent)
-        # Check that artifacts sends a 500 instead of processing an infinite loop
-        get = requests.get('{artifacts_url}/download/{container}/?format=txt'.format(
+        # Check that artifacts can handle it
+        get_txt = requests.get('{artifacts_url}/download/{container}/?format=txt'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
         ))
-        assert get.status_code == 500
+        assert get_txt.status_code == 200
+        assert len(get_txt.content.splitlines()) == 1025
+
+        # Because there is no "subdir" those two listing must be the same
+        assert get_text.content == get_txt.content
 
     def test_simple_build_copy(self):
 
-        # Due to a zenko cloud server bug, we can not succeed a copy with a build that has more than 1000 objects
-        # Let's try with 512 objects
-        for i in range(512):
+        for i in range(1024):
             url = '{artifacts_url}/upload/{container}/obj-{suffix}'.format(
                 artifacts_url=self.artifacts_url,
                 container=self.container,
@@ -227,16 +229,18 @@ class TestSimple(unittest.TestCase):
         assert get.content.splitlines()[-1] == b'BUILD COPIED'
 
         # Compare source and target listings
-        get_src = requests.get('{artifacts_url}/download/{container}/?format=text'.format(
+        get_src = requests.get('{artifacts_url}/download/{container}/?format=txt'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
         ))
-        get_tgt = requests.get('{artifacts_url}/download/copy_of_{container}/?format=text'.format(
+        get_tgt = requests.get('{artifacts_url}/download/copy_of_{container}/?format=txt'.format(
             artifacts_url=self.artifacts_url,
             container=self.container
         ))
         assert get_src.status_code == 200
         assert get_tgt.status_code == 200
+        assert len(get_src.content.splitlines()) == 1026
+        assert len(get_tgt.content.splitlines()) == 1026
         assert get_src.content == get_tgt.content
 
         # This should fail because copy already exists
@@ -247,25 +251,6 @@ class TestSimple(unittest.TestCase):
         assert get.status_code == 200
         assert get.content.splitlines()[-2] == b'Checking if the target reference \'copy_of_%b\' is empty' % bytes(self.container, encoding='utf-8')
         assert get.content.splitlines()[-1] == b'FAILED'
-
-        # Let's use the zenko cloud server bug and see how copy reacts on a failed source listing
-        for i in range(512, 1024):
-            url = '{artifacts_url}/upload/{container}/obj-{suffix}'.format(
-                artifacts_url=self.artifacts_url,
-                container=self.container,
-                suffix=i
-            )
-            success = 'SUCCESSFUL'.encode('utf-8')
-            upload = requests.put(url, data=success)
-            assert upload.status_code == 200
-        get = requests.get('{artifacts_url}/copy/{container}/copy_2_of_{container}/'.format(
-            artifacts_url=self.artifacts_url,
-            container=self.container
-        ))
-        assert get.status_code == 200
-        assert get.content.splitlines()[-2] == b'Listing objects from the source reference \'%b\'' % bytes(self.container, encoding='utf-8')
-        assert get.content.splitlines()[-1] == b'FAILED'
-
 
     def test_simple_last_success_get_head(self):
         # Test a direct upload
