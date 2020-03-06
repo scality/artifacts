@@ -77,6 +77,14 @@ http {
     #
     server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
     server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_STAGING_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
+    server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
 
     # Max number of unused keep-alive connections kept open per worker process
     # for the pool.
@@ -95,6 +103,14 @@ http {
   upstream ${AWS_BUCKET_PREFIX}-prolonged {
     server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
     server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROLONGED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
+    server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
 
     keepalive 16;
     keepalive_requests 256;
@@ -104,6 +120,14 @@ http {
   upstream ${AWS_BUCKET_PREFIX}-promoted {
     server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
     server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_PROMOTED_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0;
+    server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
+    server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
 
     keepalive 16;
     keepalive_requests 256;
@@ -120,9 +144,9 @@ http {
   #
   proxy_next_upstream error timeout http_502 http_503;
 
-  # Limit number of retries to 16.
+  # Limit number of retries to 10.
   #
-  proxy_next_upstream_tries 16;
+  proxy_next_upstream_tries 10;
 
   # This map will be used to force a "Content-type" header depending on the
   # proxyfied object extension. If no extension is found or no extension is
