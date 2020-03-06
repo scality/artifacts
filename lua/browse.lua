@@ -116,14 +116,14 @@ local function get_lists_from_upstream(delimiter, buckets)
           if object:sub(1,1) ~= '<' then
             if object:sub(1,1) == '>' then
               local marker = object:sub(2, #object)
-              -- Protection against a buggy backend that do not send the NextMarker.
+              table.insert(next_buckets, open_buckets[i])
+              -- Protection against backends that do not send the NextMarker.
               if marker ~= "" then
-                table.insert(next_buckets, open_buckets[i])
-                markers[open_buckets[i]] = object:sub(2, #object)
-                break
+                markers[open_buckets[i]] = marker
+              else
+                markers[open_buckets[i]] = ngx.var.canonical_path .. entries[open_buckets[i]][#entries[open_buckets[i]]]
               end
-              ngx.log(ngx.ERR, "listing truncated but no NextMarker available, sending back 500")
-              ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+              break
             end
             table.insert(entries[open_buckets[i]], object)
           end
