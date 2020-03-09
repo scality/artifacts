@@ -130,6 +130,7 @@ local function get_lists_from_upstream(delimiter, buckets)
         end
       else
         upstream_errors = upstream_errors + 1
+        ngx.log(ngx.ERR, "retry " .. upstream_errors .. "/" .. upstream_max_errors .. " on a subrequest for listing on '/" .. ngx.var.canonical_path .. "'")
         if upstream_errors > upstream_max_errors then
           ngx.log(ngx.ERR, "too many transient errors while listing, sending back 502")
           ngx.exit(ngx.HTTP_BAD_GATEWAY)
