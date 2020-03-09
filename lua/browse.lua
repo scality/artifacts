@@ -109,7 +109,7 @@ local function get_lists_from_upstream(delimiter, buckets)
     local next_buckets = {}
     local res = { ngx.location.capture_multi(urls) }
     for i=1, #res do
-      if res[i].status == 200 then
+      if res[i].status == 200 and res[i].truncated == false then
         for object in res[i].body:gmatch("([^\r\n]+)[\r\n]+") do
           -- Ignore the '<' line specifically added by xlst to avoid the output to be empty,
           -- as this would generate a 500 error within nginx.

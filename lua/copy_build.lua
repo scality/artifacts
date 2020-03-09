@@ -20,13 +20,13 @@ ngx.say("Checking if the target reference '" .. build_tgt .. "' is empty")
 ngx.flush(true)
 url = "/force_real_request/download/" .. build_tgt .. "/?format=txt"
 res = ngx.location.capture(url)
-if res.body ~= "" then
+if res.body == "" and res.truncated == false then
+  ngx.say('DONE')
+  ngx.flush(true)
+else
   ngx.say('FAILED')
   ngx.flush(true)
   return
-else
-  ngx.say('PASSED')
-  ngx.flush(true)
 end
 
 -- Add a reference to the original build, if needed.
@@ -35,7 +35,10 @@ ngx.say("Adding the source reference '" .. build_src .. "' if needed")
 ngx.flush(true)
 url = "/force_real_request/download/" .. build_src .. "/.original_build"
 res = ngx.location.capture(url)
-if res.status ~= 200 then
+if res.status == 200 then
+  ngx.say('DONE')
+  ngx.flush(true)
+else
   url = "/force_real_request/upload/" .. build_src .. "/.original_build"
   res = ngx.location.capture(url, { method = ngx.HTTP_PUT, body = build_src })
   if res.status == 200 then
@@ -53,7 +56,7 @@ end
 ngx.say("Listing objects from the source reference '" .. build_src .. "'")
 url = "/force_real_request/download/" .. build_src .. "/?format=txt"
 res = ngx.location.capture(url)
-if res.status == 200 then
+if res.status == 200 and res.truncated == false then
   ngx.say('DONE')
   ngx.flush(true)
 else
