@@ -128,7 +128,7 @@ local function get_lists_from_upstream(delimiter, buckets)
             table.insert(entries[open_buckets[i]], object)
           end
         end
-      elseif res[i].status == 502 or res[i].status == 503 then
+      else
         upstream_errors = upstream_errors + 1
         if upstream_errors > upstream_max_errors then
           ngx.log(ngx.ERR, "too many transient errors while listing, sending back 502")
@@ -136,9 +136,6 @@ local function get_lists_from_upstream(delimiter, buckets)
         end
         ngx.sleep(1)
         table.insert(next_buckets, open_buckets[i])
-      else
-        ngx.log(ngx.ERR, "unsupported error while listing, sending back 502")
-        ngx.exit(ngx.HTTP_BAD_GATEWAY)
       end
     end
     open_buckets = next_buckets
