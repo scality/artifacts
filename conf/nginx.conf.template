@@ -140,9 +140,9 @@ http {
   #
   proxy_request_buffering on;
 
-  # Enable retry for connect, timeout, 502 and 503 errors.
+  # Enable retry for connect, timeout, 500, 502, 503 and 504 errors.
   #
-  proxy_next_upstream error timeout http_502 http_503;
+  proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
 
   # Limit number of retries to 10.
   #
