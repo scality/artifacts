@@ -29,7 +29,8 @@ http {
   #
   log_format access_cache '$remote_addr - $upstream_cache_status [$time_local] '
                          '"$request" $status $body_bytes_sent '
-                         '"$http_referer" "$http_user_agent"';
+                         '"$http_referer" "$http_user_agent" '
+                         '($upstream_response_time)';
   access_log /dev/stdout access_cache;
 
   # Mandatory directive to run lua stuff.
