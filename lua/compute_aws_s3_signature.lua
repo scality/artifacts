@@ -197,6 +197,8 @@ elseif signature_mode == "COPY" then
   --
   if is_staging(build_src) then
     aws_src_bucket = aws_bucket_prefix .. "-staging"
+  elseif is_promoted(build_src) then
+    aws_src_bucket = aws_bucket_prefix .. "-promoted"
   else
     aws_src_bucket = aws_bucket_prefix .. "-prolonged"
   end
