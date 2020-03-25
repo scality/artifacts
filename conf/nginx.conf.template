@@ -223,6 +223,10 @@ http {
     #
     rewrite ^/builds/(.*)$ /download/$1 last;
 
+    # Handle subdir listing under "/redirect/"
+    #
+    rewrite ^/redirect/(.*/)$ /download/$1 last;
+
     # Hack
     #
     # For some unknown reason the subrequest initiated by the lua call
