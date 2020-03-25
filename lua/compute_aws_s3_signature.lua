@@ -243,6 +243,10 @@ elseif signature_mode == "PRESIGN" then
   --
   compute_S3_presignature (expires)
 
+  -- Redirect directly from here.
+  --
+  return ngx.redirect(ngx.var.redirect_endpoint .. "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?" .. ngx.var.presign_query_string, ngx.HTTP_MOVED_TEMPORARILY);
+
 else
 
   --

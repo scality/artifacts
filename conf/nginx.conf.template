@@ -378,13 +378,12 @@ http {
 
       # Process AWS S3 signature.
       #
-      set $signature_mode "PRESIGN";
-      set $redirect_url   "";
+      set $signature_mode       "PRESIGN";
+      set $redirect_endpoint    "__S3_ENDPOINT_PROTO____S3_ENDPOINT_HOST__:__S3_ENDPOINT_PORT__";
+      set $aws_tgt_bucket       "";
+      set $encoded_key          "";
+      set $presign_query_string "";
       rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
-
-      # Send a temporarily redirect to Google Cloud Storage.
-      #
-      return 302 $redirect_url;
     }
 
     # This will be called to send a generic 404 body instead of the XML body
