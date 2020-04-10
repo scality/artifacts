@@ -73,6 +73,17 @@ deployment:
       ##
       passwordHash: ""
 
+    whiteList:
+      ## enabled specifies if IP white listing should be enabled.
+      ##
+      ##   This is compatible with a Nginx ingress controller only.
+      ##
+      enabled: False
+
+      ## IP white list
+      ##
+      ips: []
+
   service:
     ## name will be the hostname of the local service.
     ##

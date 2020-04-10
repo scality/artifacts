@@ -34,6 +34,14 @@ metadata:
     nginx.ingress.kubernetes.io/auth-secret: {{ template "fullname" $ }}-basic-auth
     nginx.ingress.kubernetes.io/auth-realm: "Authentication required - artifacts"
     {{- end }}
+    {{- if .whiteList.enabled }}
+    nginx.ingress.kubernetes.io/configuration-snippet: |-
+      satisfy any;
+      {{- range .whiteList.ips }}
+      allow {{.}};
+      {{- end }}
+      deny all;
+    {{- end }}
 spec:
   rules:
   - host: {{ .fqdn }}
