@@ -36,11 +36,11 @@ metadata:
     {{- end }}
     {{- if .whiteList.enabled }}
     nginx.ingress.kubernetes.io/configuration-snippet: |-
-      satisfy any;
       {{- range .whiteList.ips }}
       allow {{.}};
       {{- end }}
       deny all;
+      satisfy any;
     {{- end }}
 spec:
   rules:
