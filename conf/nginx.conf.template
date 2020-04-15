@@ -547,7 +547,42 @@ http {
 
     # Put an object.
     #
+    location ~ ^/upload/([^/]+/.final_status)$ {
+      if ($request_method != PUT) {
+        return 400;
+      }
+
+      # Canonicalize path.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      #
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]*$') {
+        return 400;
+      }
+
+      lua_need_request_body on;
+      client_max_body_size 100k;
+      client_body_buffer_size 1;
+      sendfile on;
+
+      # Process multiple PUT.
+      #
+      content_by_lua_file /etc/nginx/multiple_put.lua;
+
+    }
+
+    # Put an object.
+    #
     location ~ ^/upload/([^/]+/.*[^/])$ {
+      rewrite ^/upload/(.*)$ /upload_raw/$1 last;
+    }
+
+
+    # Put an object.
+    #
+    location ~ ^/upload_raw/([^/]+/.*[^/])$ {
       if ($request_method != PUT) {
         return 400;
       }
@@ -557,6 +592,8 @@ http {
       if ($http_script_name) {
         return 403;
       }
+
+      # check 127.0.0.1 here
 
       # Canonicalize key.
       #
@@ -568,9 +605,10 @@ http {
       }
 
       # Check that we are uploading an object to a staging build
-      if ($canonical_path !~ '^[^/]+\:(dev-|preprod-|)staging\-[0-9]+(\.[0-9]+){1,3}\.r[0-9]{12}\.[0-9a-f]+\.[^/]+\.[0-9]+/') {
-        return 400;
-      }
+      # MOVE THIS to the caller
+      #if ($canonical_path !~ '^[^/]+\:(dev-|preprod-|)staging\-[0-9]+(\.[0-9]+){1,3}\.r[0-9]{12}\.[0-9a-f]+\.[^/]+\.[0-9]+/') {
+      #  return 400;
+      #}
 
       # Process AWS S3 signature.
       #

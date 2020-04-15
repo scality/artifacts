@@ -94,6 +94,7 @@ COPY lua/compute_aws_s3_signature.lua /etc/nginx/compute_aws_s3_signature.lua
 COPY lua/find_build.lua /etc/nginx/find_build.lua
 COPY lua/copy_build.lua /etc/nginx/copy_build.lua
 COPY lua/browse.lua /etc/nginx/browse.lua
+COPY lua/multiple_put.lua /etc/nginx/multiple_put.lua
 
 RUN /usr/local/bin/luajit -b /etc/nginx/canonicalize_path.lua /etc/nginx/canonicalize_path.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/compute_aws_s3_signature.lua /etc/nginx/compute_aws_s3_signature.ljbc
