@@ -545,9 +545,9 @@ http {
       content_by_lua_file /etc/nginx/copy_build.ljbc;
     }
 
-    # Put an object.
+    # Put an object, no object's path checking
     #
-    location ~ ^/upload/([^/]+/.*[^/])$ {
+    location ~ ^/upload_raw/([^/]+/.*[^/])$ {
       if ($request_method != PUT) {
         return 400;
       }
@@ -564,11 +564,6 @@ http {
 
       # Apply charset whitelist filtering.
       if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
-        return 400;
-      }
-
-      # Check that we are uploading an object to a staging build
-      if ($canonical_path !~ '^[^/]+\:(dev-|preprod-|)staging\-[0-9]+(\.[0-9]+){1,3}\.r[0-9]{12}\.[0-9a-f]+\.[^/]+\.[0-9]+/') {
         return 400;
       }
 
@@ -607,6 +602,20 @@ http {
       # Proxy request to upstream "keepalivepool".
       #
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
+    }
+
+    # Put an object with path checks
+    #
+    location ~ ^/upload/([^/]+/.*[^/])$ {
+      # Canonicalize key.
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Check that we are uploading an object to a staging build
+      if ($canonical_path !~ '^[^/]+\:(dev-|preprod-|)staging\-[0-9]+(\.[0-9]+){1,3}\.r[0-9]{12}\.[0-9a-f]+\.[^/]+\.[0-9]+/') {
+        return 400;
+      }
+
+      rewrite ^/upload/(.*)$ /upload_raw/$1 last;
     }
   }
 }
