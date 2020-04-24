@@ -617,5 +617,31 @@ http {
 
       rewrite ^/upload/(.*)$ /upload_raw/$1 last;
     }
+
+    # Upload 'metadata' associated to a build
+    #
+    location ~ ^/extra/artifacts_values/(.*[^/])?$ {
+      if ($request_method != PUT) {
+        return 400;
+      }
+
+      # Not allowed behind ingress.
+      #
+      if ($http_script_name) {
+        return 403;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      content_by_lua_file /etc/nginx/extra.ljbc;
+    }
+
   }
 }
