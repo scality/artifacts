@@ -39,7 +39,11 @@ spec:
   - host: {{ .fqdn }}
     http:
       paths:
-        - path: {{ .path | quote }}
+        - path: {{ .path | quote | replace "/bitbucket/" "/github/" }}
+          backend:
+            serviceName: {{ $.Values.deployment.service.name }}
+            servicePort: {{ $.Values.deployment.service.port }}
+        - path: {{ .path | quote | replace "/github/" "/bitbucket/" }}
           backend:
             serviceName: {{ template "fullname" $ }}
             servicePort: {{ $.Values.deployment.service.port }}
