@@ -22,10 +22,10 @@ S3_ENDPOINT_HOST="$(echo $S3_ENDPOINT_HOSTPORT | sed -e 's,:.*,,g')"
 S3_ENDPOINT_PORT="$(echo $S3_ENDPOINT_HOSTPORT | grep : | sed -e 's,^\(.*\):\([0-9]*\)\(.*\),\2,')"
 
 # Retrieve S3 endpoint ip address
-S3_ENDPOINT_GENERIC_IPV4=$(host $S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4)
-S3_ENDPOINT_STAGING_IPV4=$(host ${AWS_BUCKET_PREFIX}-staging.$S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4)
-S3_ENDPOINT_PROLONGED_IPV4=$(host ${AWS_BUCKET_PREFIX}-prolonged.$S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4)
-S3_ENDPOINT_PROMOTED_IPV4=$(host ${AWS_BUCKET_PREFIX}-promoted.$S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4)
+S3_ENDPOINT_GENERIC_IPV4=$(host $S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4 | head -1)
+S3_ENDPOINT_STAGING_IPV4=$(host ${AWS_BUCKET_PREFIX}-staging.$S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4 | head -1)
+S3_ENDPOINT_PROLONGED_IPV4=$(host ${AWS_BUCKET_PREFIX}-prolonged.$S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4 | head -1)
+S3_ENDPOINT_PROMOTED_IPV4=$(host ${AWS_BUCKET_PREFIX}-promoted.$S3_ENDPOINT_HOST | grep 'has address' | cut -d\  -f4 | head -1)
 
 if [[  ${S3_ENDPOINT_GENERIC_IPV4} == "" ]]; then
     echo "ipv4 not found for ${ENDPOINT_URL}. Using S3 host instead..."
