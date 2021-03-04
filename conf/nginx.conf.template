@@ -168,6 +168,12 @@ http {
     #
     proxy_http_version 1.1;
 
+    # Handle status module.
+    #
+    location /nginx_status {
+      stub_status;
+    }
+
     # Handle "latest" feature.
     #
     location ~ ^/latest/(.*)$ {
