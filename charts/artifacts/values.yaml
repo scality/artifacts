@@ -69,10 +69,10 @@ deployment:
     resources:
       limits:
         cpu: "2"
-        memory: "1Gi"
+        memory: "2Gi"
       requests:
         cpu: "2"
-        memory: "1Gi"
+        memory: "2Gi"
 
   ## Configure the ingress resource that allows you to access the service.
   ingress:
