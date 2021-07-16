@@ -1,6 +1,6 @@
 FROM python:3.7
 
-VOLUME ['/home/workspace']
+VOLUME /home/workspace
 
 WORKDIR /home/workspace
 
