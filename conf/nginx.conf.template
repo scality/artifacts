@@ -564,12 +564,6 @@ http {
         return 400;
       }
 
-      # Not allowed behind ingress.
-      #
-      if ($http_script_name) {
-        return 403;
-      }
-
       # Canonicalize key.
       #
       set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
