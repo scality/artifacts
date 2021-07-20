@@ -117,7 +117,7 @@ class TestSimple(unittest.TestCase):
         )
         success = 'SUCCESSFUL'.encode('utf-8')
         upload = requests.put(url, data=success, headers={'Script-Name': '/foo'})
-        assert upload.status_code == 403
+        assert upload.status_code == 200
 
         # Mimic a copy behind the ingress
         url = '{artifacts_url}/copy/{container}/copy_of_{container}/'.format(
