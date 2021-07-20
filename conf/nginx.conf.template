@@ -6,6 +6,8 @@
 # Google Cloud Storage S3 compatible credentials.
 env AWS_ACCESS_KEY_ID;
 env AWS_SECRET_ACCESS_KEY;
+env GITHUB_API_COMPANY;
+env GITHUB_API_ENABLED;
 
 # Google Cloud Storage S3 compatible bucket prefix.
 env AWS_BUCKET_PREFIX;
@@ -32,6 +34,7 @@ http {
                          '"$http_referer" "$http_user_agent" '
                          '($upstream_response_time)';
   access_log /dev/stdout access_cache;
+  access_by_lua_file "/etc/nginx/github_access.ljbc";
 
   # Mandatory directive to run lua stuff.
   #
@@ -238,6 +241,21 @@ http {
     # Handle subdir listing under "/redirect/"
     #
     rewrite ^/redirect/(.*/)$ /download/$1 last;
+
+    # Hack
+    #
+    # ngx.location.capture() does not allow request to external url.
+    #
+    # To solve this, a specific location has been added for that will redirect
+    # a real request by using a proxy_pass to a full url.
+    #
+    location /force_github_request/ {
+      # Not exposed to external requests.
+      #
+      internal;
+      proxy_pass __GITHUB_API_URL__/;
+      proxy_set_header Host $host;
+    }
 
     # Hack
     #

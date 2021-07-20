@@ -3,6 +3,11 @@
 # Make lua libs available
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
+# Defaulting to github api url endpoint
+GITHUB_API_URL=${GITHUB_API_URL:=https://api.github.com}
+GITHUB_API_ENABLED=${GITHUB_API_ENABLED:=false}
+GITHUB_API_COMPANY=${GITHUB_API_COMPANY:=None}
+
 # Defaulting to google cloud storage S3 compatible endpoint
 ENDPOINT_URL=${ENDPOINT_URL:=https://storage.googleapis.com}
 
@@ -103,6 +108,7 @@ sed -e "s|\${AWS_BUCKET_PREFIX}|${AWS_BUCKET_PREFIX}|g" \
     -e "s|__S3_ENDPOINT_HOST__|${S3_ENDPOINT_HOST}|g" \
     -e "s|__S3_ENDPOINT_PORT__|${S3_ENDPOINT_PORT}|g" \
     -e "s|__SUPPORTED_CHARSET__|$supported_charset|g" \
+    -e "s|__GITHUB_API_URL__|${GITHUB_API_URL}|g" \
     /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 # Launch updater

@@ -7,6 +7,7 @@ spec:
   hostAliases:
   - ip: "127.0.0.1"
     hostnames:
+    - "fake-github-url"
     - "cloudserver-front"
     - "artifacts"
   containers:
@@ -44,6 +45,12 @@ spec:
           value: http://cloudserver-front:8000
         - name: AWS_XML_NS
           value: http://s3.amazonaws.com/doc/2006-03-01/
+        - name: GITHUB_API_URL
+          value: http://fake-github-url:5050
+        - name: GITHUB_API_COMPANY
+          value: scality
+        - name: GITHUB_API_ENABLED
+          value: "true"
       volumeMounts:
         - name: artifacts-workspace
           mountPath: /data/nginx
@@ -68,6 +75,15 @@ spec:
           value: debug
         - name: ENDPOINT
           value: "cloudserver-front"
+    - name: fake-github
+      image: "{{ images.fakegithub }}"
+      resources:
+        requests:
+          cpu: "500m"
+          memory: 1Gi
+        limits:
+          cpu: "1"
+          memory: 1Gi
   volumes:
     - name: worker-workspace
       emptyDir: {}
