@@ -14,9 +14,9 @@ docker build -t artifacts-end2end:latest "${TEST_DIR}"
 docker build -t fake-github:latest "${TEST_DIR}/github-fake-config/"
 
 # Start cloudserver and artifacts
-docker run -d --rm -p 8000:8000 --name cloudserver --env REMOTE_MANAGEMENT_DISABLE=1 --env LOG_LEVEL=debug --env ENDPOINT="cloudserver-front" zenko/cloudserver:8.1.2 yarn start
-docker run -d --rm -p 5050:5050 --name fake-github fake-github
-docker run -d --rm -p 5000:80   --name artifacts --link=cloudserver:cloudserver-front --link=fake-github:fake-github-url --env-file=.env artifacts
+docker run -d --rm --name cloudserver --env REMOTE_MANAGEMENT_DISABLE=1 --env LOG_LEVEL=debug --env ENDPOINT="cloudserver-front" zenko/cloudserver:8.1.2
+docker run -d --rm --name fake-github fake-github
+docker run -d --rm --name artifacts --link=cloudserver:cloudserver-front --link=fake-github:fake-github-url --env-file=.env artifacts
 sleep 10
 
 # Run tests
