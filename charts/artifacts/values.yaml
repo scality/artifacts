@@ -7,7 +7,7 @@ nameOverride: "artifacts"
 ## fullnameOverride allows to change the full name of resources
 fullnameOverride:
 
-githubApiBasiAuth:
+githubApiBasicAuth:
   ## githubApiUrl contains the api url to check the auth connection
   ##
   url: 'https://api.github.com'
