@@ -1,0 +1,93 @@
+name: Basic Tests
+
+on:
+  push:
+    branches:
+      - 'user/**'
+      - 'feature/**'
+      - 'improvement/**'
+      - 'bugfix/**'
+      - 'dependabot/**'
+      - 'w/**'
+      - 'q/**'
+
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildk
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+      - name: Login to Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Artifacts
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          context: .
+          file: ./Dockerfile
+          tags: "ghcr.io/scality/${{ github.repository }}:artifacts-${{ github.sha }}"
+
+      - name: Build and push Fake github container
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          context: ./tests/github-fake-config
+          file: ./tests/github-fake-config/Dockerfile
+          tags: "ghcr.io/scality/${{ github.repository }}:fake-github-${{ github.sha }}"
+
+      - name: Build and push test image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          context: ./tests
+          file: ./tests/Dockerfile
+          tags: "ghcr.io/scality/${{ github.repository }}:tests-${{ github.sha }}"
+
+  tests:
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/scality/${{ github.repository }}:tests-${{ github.sha }}"
+      options: --user=0
+    env:
+      ARTIFACTS_URL: http://artifacts
+    services:
+      cloudserver-front:
+        image: "zenko/cloudserver:8.1.2"
+        env:
+          REMOTE_MANAGEMENT_DISABLE: 1
+          LOG_LEVEL: debug
+          ENDPOINT: "cloudserver-front"
+          CI: false
+      fake-github-url:
+        image: "ghcr.io/scality/${{ github.repository }}:fake-github-${{ github.sha }}"
+      artifacts:
+        image: "ghcr.io/scality/${{ github.repository }}:artifacts-${{ github.sha }}"
+        env:
+          AWS_SECRET_ACCESS_KEY: verySecretKey1
+          AWS_ACCESS_KEY_ID: accessKey1
+          AWS_BUCKET_PREFIX: artifacts
+          ENDPOINT_URL: http://cloudserver-front:8000
+          AWS_XML_NS: http://s3.amazonaws.com/doc/2006-03-01/
+          GITHUB_API_URL: http://fake-github-url:5050
+          GITHUB_API_COMPANY: scality
+          GITHUB_API_ENABLED: "true"
+    needs:
+      - publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Test artifacts
+        run: pytest
+
