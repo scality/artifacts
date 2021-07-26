@@ -251,10 +251,9 @@ http {
     #
     location /force_github_request/ {
       # Not exposed to external requests.
-      #
+      # Set `proxy_set_header Host $host;` will make api call to github always fail
       internal;
       proxy_pass __GITHUB_API_URL__/;
-      proxy_set_header Host $host;
     }
 
     # Hack
