@@ -21,7 +21,7 @@ def artifacts_url(request):
 
 @pytest.fixture(scope="class")
 def container(request):
-    request.cls.container = 'githost:owner:repo:staging-0.0.0.0.r190101000000.1234567.pre-merge.12345678'
+    request.cls.container = 'githost:owner:repo:staging-1628004655.8e50acc6a1.pre-merge.28'
 
 @pytest.fixture(scope="class")
 def buckets(request):
