@@ -51,6 +51,8 @@ spec:
           value: scality
         - name: GITHUB_API_ENABLED
           value: "true"
+        - name: GITHUB_USER_ALLOWED_UPLOAD
+          value: "username-pass"
       volumeMounts:
         - name: artifacts-workspace
           mountPath: /data/nginx

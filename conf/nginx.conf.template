@@ -6,8 +6,11 @@
 # Google Cloud Storage S3 compatible credentials.
 env AWS_ACCESS_KEY_ID;
 env AWS_SECRET_ACCESS_KEY;
+
+# Github basic auth checks.
 env GITHUB_API_COMPANY;
 env GITHUB_API_ENABLED;
+env GITHUB_USER_ALLOWED_UPLOAD;
 
 # Google Cloud Storage S3 compatible bucket prefix.
 env AWS_BUCKET_PREFIX;
