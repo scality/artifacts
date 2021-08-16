@@ -20,6 +20,10 @@ githubApiBasicAuth:
   ##
   enabled: 'true'
 
+  ## Allowed users to upload files to artifacts
+  ##
+  githubUsernameAllowedToUpload: []
+
 cloudStorage:
   ## awsaccesskeyid contains the account information to access cloud storage.
   ##
