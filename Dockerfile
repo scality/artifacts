@@ -83,6 +83,7 @@ RUN make install
 
 # Install start scripts
 COPY full_listing_cache_update.sh /full_listing_cache_update.sh
+COPY github_auth_cache_cleaner.sh /github_auth_cache_cleaner.sh
 COPY start.sh /start.sh
 
 # Install HTML browse includes

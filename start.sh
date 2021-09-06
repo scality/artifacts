@@ -111,7 +111,10 @@ sed -e "s|\${AWS_BUCKET_PREFIX}|${AWS_BUCKET_PREFIX}|g" \
     -e "s|__GITHUB_API_URL__|${GITHUB_API_URL}|g" \
     /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
-# Launch updater
+# Launch github auth cache cleaner
+/github_auth_cache_cleaner.sh &
+
+# Launch full listing cache updater
 /full_listing_cache_update.sh &
 
 # Launch nginx

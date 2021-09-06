@@ -6,6 +6,7 @@
 local github_api_enabled            = os.getenv('GITHUB_API_ENABLED')
 local github_api_company            = os.getenv('GITHUB_API_COMPANY')
 local env_github_restriction_upload = os.getenv('GITHUB_USER_ALLOWED_UPLOAD')
+local github_auth_cache_dir         = "/data/nginx/artifacts_github_auth_cache"
 local github_restriction_upload = {}
 
 for allowed_user in env_github_restriction_upload:gmatch("([^,]+)") do
@@ -21,7 +22,6 @@ function wrong_credentials()
    return ngx.exit(ngx.HTTP_UNAUTHORIZED)
 end
 
-
 function not_allowed()
    ngx.header.content_type = 'text/plain'
    ngx.status = ngx.HTTP_FORBIDDEN
@@ -29,17 +29,68 @@ function not_allowed()
    return ngx.exit(ngx.HTTP_FORBIDDEN)
 end
 
+function read_cache(auth_md5)
+    local path = github_auth_cache_dir .. "/" .. auth_md5
+
+    local file = io.open(path, "rb")
+    if not file then
+        return nil
+    end
+
+    local content = file:read("*a")
+    file:close()
+
+    return content
+end
+
+function update_cache(auth_md5, status)
+    local path = github_auth_cache_dir .. "/" .. auth_md5
+
+    local cmd = io.popen("mktemp -p " .. github_auth_cache_dir .. " tmp_XXXXXXXXX")
+    path_orig = cmd:read()
+    cmd:close()
+    if path_orig == nil then
+        return nil
+    end
+
+    local file = io.open(path_orig, "wb")
+    if not file then
+        return nil
+    end
+
+    file:write(status)
+    file:close()
+
+    res = os.rename(path_orig, path)
+    if res == nil then
+        os.remove(path_orig)
+        return nil
+    end
+end
+
 function authenticate(auth)
     divider = auth:find(':')
     local username = auth:sub(0, divider-1)
+    local auth_md5 = ngx.md5(auth)
 
-    local res =  ngx.location.capture("/force_github_request/orgs/" .. github_api_company .. "/members/" .. username)
-    ngx.log(ngx.STDERR, "status member \t\t" .. res.status)
+    cached_status = read_cache(auth_md5)
 
-    if res.status ~= 204 then
-        return  false
+    if cached_status == nil then
+        local res =  ngx.location.capture("/force_github_request/orgs/" .. github_api_company .. "/members/" .. username)
+        ngx.log(ngx.STDERR, "status member \t\t" .. res.status)
+
+        update_cache(auth_md5, res.status)
+
+        if res.status ~= 204 then
+            return  false
+        end
+        return true
+    else
+        if cached_status ~= '204' then
+	    return false
+        end
+        return true
     end
-    return true
 end
 
 function verify_header()
