@@ -34,7 +34,7 @@ for i = #builds, 1, -1 do
   if redirect then
     local url = "/download/" .. builds[i]
     if ngx.var.http_script_name ~= nil then
-      url = ngx.var.http_script_name .. url
+      url = ngx.var.http_script_name:gsub('(.)%/$', '%1') .. url
     end
     return ngx.redirect(url, ngx.HTTP_MOVED_TEMPORARILY);
   end
