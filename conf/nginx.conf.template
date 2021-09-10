@@ -225,6 +225,14 @@ http {
       rewrite_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
+    # Handle browsing per project.
+    #
+    location ~ ^/github/scality/([^/]+)/(builds|download)/(.*)$ {
+      proxy_pass http://127.0.0.1/download/$3$is_args$args;
+      proxy_set_header Host $host;
+      proxy_set_header Script-Name /github/scality/$1/;
+    }
+
     # Redirect a url listing a container not ended by a slash to the same url
     # with a trailing slash.
     #

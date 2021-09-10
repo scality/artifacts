@@ -110,6 +110,21 @@ class TestSimple(unittest.TestCase):
 
         assert sha_download == sha_upload
 
+        # Download through full url with repo ref inside
+        download_file = tempfile.mktemp()
+        url = '{artifacts_url}/github/scality/fakerepo/builds/{container}{filename}'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container,
+            filename=filename
+        )
+        with open(download_file, 'wb+') as fd:
+            download = self.session.get(url, headers={'ForceCacheUpdate': 'yes'})
+            assert download.status_code == 200
+            fd.write(download.content)
+            sha_download = hashlib.sha256(fd.read()).hexdigest()
+
+        assert sha_download == sha_upload
+
     def test_simple_upload_and_copy_behind_ingress(self):
 
         # Mimic an upload behind the ingress
