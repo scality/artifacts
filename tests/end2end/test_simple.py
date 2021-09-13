@@ -143,7 +143,7 @@ class TestSimple(unittest.TestCase):
         )
         success = 'SUCCESSFUL'.encode('utf-8')
         copy = self.session.get(url, data=success, headers={'Script-Name': '/foo'})
-        assert copy.status_code == 403
+        assert copy.status_code == 200
 
         # Upload without ingress and download with ingress
         url = '{artifacts_url}/upload/{container}/.final_status'.format(
