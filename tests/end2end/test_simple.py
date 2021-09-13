@@ -429,6 +429,34 @@ class TestExternalBasicAuthentication(unittest.TestCase):
         upload = self.session.put(url, data=success, headers={'Script-Name': '/foo'})
         assert upload.status_code == 200
 
+    def test_successful_user_not_allowed_to_restricted_paths (self):
+        self.session.auth = ('username-pass-no-restricted-paths', 'fake-password')
+
+        # Mimic a download
+        url = '{artifacts_url}/download/{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.get(url)
+        assert upload.status_code == 404
+
+        # Mimic an upload
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = self.session.put(url, data=success)
+        assert upload.status_code == 403
+
+        # Mimic a copy
+        url = '{artifacts_url}/copy/{container}/copy_of_{container}/'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        copy = self.session.get(url)
+        assert copy.status_code == 403
+
     def test_fail_user(self):
         self.session.auth = ('username-fail', 'fake-password')
 
