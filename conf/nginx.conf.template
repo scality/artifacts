@@ -141,15 +141,14 @@ http {
     keepalive_timeout 60s;
   }
 
-  # Store client request before sending it via proxy_pass. This is mandatory
-  # in order to make proxy_next_upstream work, which is the only way we have
-  # to retry silently.
+  # Do not store client request body before sending it via proxy_pass.
   #
-  proxy_request_buffering on;
+  proxy_request_buffering off;
 
-  # Enable retry for connect, timeout, 500, 502, 503 and 504 errors.
+  # Enable retry for connect, timeout (we do not retry on something else
+  # as we do not store the request body).
   #
-  proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+  proxy_next_upstream error timeout;
 
   # Limit number of retries to 10.
   #
