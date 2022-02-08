@@ -47,10 +47,6 @@ http {
   #
   resolver 8.8.8.8 valid=300s ipv6=off;
 
-  # Volume used to store body from upload requests temporarily
-  #
-  proxy_temp_path /data/nginx/temp;
-
   # Volume used to cache objects
   #
   proxy_cache_path /data/nginx/cache levels=1:2 keys_zone=download_cache:10m max_size=16g inactive=1d use_temp_path=off;
