@@ -26,7 +26,7 @@ events {
 http {
   # Uncomment the line below to enable some debug.
   #
-  # error_log /dev/stderr debug;
+  error_log /dev/stderr debug;
 
   # Define a format that will also log cache hit or miss in access_log. This
   # is based on the combined format (enabled by default), where it adds the
