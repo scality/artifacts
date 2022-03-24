@@ -504,6 +504,8 @@ http {
     #
     # /src_build/tgt_build/object_path
     #
+    # if object_path matches .ARTIFACTS_BEFORE/[d]+/(.*), the source will be $1 from regexp.
+    #
     location ~ ^/copy/[^/]+/[^/]+/.*[^/]$ {
       if ($request_method != PUT) {
         return 400;
@@ -576,6 +578,29 @@ http {
       content_by_lua_file /etc/nginx/copy_build.ljbc;
     }
 
+    # Version an object with the following syntax:
+    #
+    # /version/object_path
+    #
+    location ~ ^/version/([0-9]+)/([^/]+/.*[^/])$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process object versioning.
+      #
+      content_by_lua_file /etc/nginx/version_object.ljbc;
+    }
+
     # Put an object.
     #
     location ~ ^/upload/([^/]+/.*[^/])$ {
@@ -593,7 +618,7 @@ http {
       }
 
       # Check that we are uploading an object to a staging build
-      if ($canonical_path !~ '^[^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+.[0-9]+/') {
+      if ($canonical_path !~ '^[^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)/') {
         return 400;
       }
 
