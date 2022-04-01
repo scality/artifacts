@@ -656,6 +656,10 @@ http {
       if ($canonical_path !~ '^[^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)/') {
         return 400;
       }
+
+      # Process object versioning.
+      #
+      content_by_lua_file /etc/nginx/version_object.ljbc;
     }
 
     # Put an object.

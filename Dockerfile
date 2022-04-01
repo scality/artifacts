@@ -95,6 +95,7 @@ COPY lua/canonicalize_path.lua /etc/nginx/canonicalize_path.lua
 COPY lua/compute_aws_s3_signature.lua /etc/nginx/compute_aws_s3_signature.lua
 COPY lua/find_build.lua /etc/nginx/find_build.lua
 COPY lua/copy_build.lua /etc/nginx/copy_build.lua
+COPY lua/version_object.lua /etc/nginx/version_object.lua
 COPY lua/browse.lua /etc/nginx/browse.lua
 COPY lua/github_access.lua /etc/nginx/github_access.lua
 
@@ -102,6 +103,7 @@ RUN /usr/local/bin/luajit -b /etc/nginx/canonicalize_path.lua /etc/nginx/canonic
 RUN /usr/local/bin/luajit -b /etc/nginx/compute_aws_s3_signature.lua /etc/nginx/compute_aws_s3_signature.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/find_build.lua /etc/nginx/find_build.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/copy_build.lua /etc/nginx/copy_build.ljbc
+RUN /usr/local/bin/luajit -b /etc/nginx/version_object.lua /etc/nginx/version_object.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/browse.lua /etc/nginx/browse.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/github_access.lua /etc/nginx/github_access.ljbc
 
