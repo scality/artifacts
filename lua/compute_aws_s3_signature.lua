@@ -206,16 +206,22 @@ elseif signature_mode == "COPY" then
   -- Set the target bucket.
   --
   if ngx.var.aws_tgt_bucket == "" then
-    if is_promoted(build_tgt) then
+    if is_staging(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+    elseif is_promoted(build_tgt) then
       ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-promoted"
     else
       ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-prolonged"
     end
   end
 
-  -- Set the amz headers.
+  -- Set the amz headers (Remove .ARTIFACTS_BEFORE/[d]+/ from source, if needed)
   --
-  ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/', build_src .. "/", 1)
+  if ngx.var.encoded_key:match("^[^/]+/%.ARTIFACTS_BEFORE/[0-9]+/") then
+    ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/[^/]+/[^/]+/', build_src .. "/", 1)
+  else
+    ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/', build_src .. "/", 1)
+  end
 
   -- Compute signature.
   --

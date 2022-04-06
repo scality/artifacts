@@ -504,6 +504,8 @@ http {
     #
     # /src_build/tgt_build/object_path
     #
+    # if object_path matches .ARTIFACTS_BEFORE/[d]+/(.*), the source will be $1 from regexp.
+    #
     location ~ ^/copy/[^/]+/[^/]+/.*[^/]$ {
       if ($request_method != PUT) {
         return 400;
@@ -649,11 +651,6 @@ http {
 
       # Apply charset whitelist filtering.
       if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
-        return 400;
-      }
-
-      # Check that we are deleting an object from a staging build
-      if ($canonical_path !~ '^[^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)/') {
         return 400;
       }
 
