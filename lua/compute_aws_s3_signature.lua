@@ -217,7 +217,7 @@ elseif signature_mode == "COPY" then
 
   -- Set the amz headers (Remove .ARTIFACTS_BEFORE/[d]+/ from source, if needed)
   --
-  if ngx.var.encoded_key:match("^[^/]+/%.ARTIFACTS_BEFORE/[0-9]+/") then
+  if ngx.var.encoded_key:match("^[^/]+/%.ARTIFACTS_BEFORE/[0-9]+/") and build_src == build_tgt then
     ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/[^/]+/[^/]+/', build_src .. "/", 1)
   else
     ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/', build_src .. "/", 1)
