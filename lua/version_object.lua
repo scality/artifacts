@@ -1,7 +1,7 @@
 -- Grab version and object.
 --
 
-local version, build, object = string.match(ngx.var.canonical_path, "^([^/]+)/([^/]+)/(.*)?")
+local version, build, object = string.match(ngx.var.canonical_path, "^([^/]+)/([^/]+)/(.*)")
 
 local url, res
 
