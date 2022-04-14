@@ -500,6 +500,68 @@ http {
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
     }
 
+    # Check an object without downloading it.
+    #
+    # For some reason that I did not understand, HEAD is failing with 403 againt GCS
+    # In order to have a fast way to check if an object exist without a possibly expensive
+    # listing or download, we can do a GET on a short range without caching
+    #
+    # Will return 416 if the object exists (the range header is invalid on purpose)
+    # Will return 404 if the object does not exist
+    #
+    location ~ ^/check_raw/([^/]+/.*[^/])$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Not allowed from outside the container.
+      #
+      if ($remote_addr != 127.0.0.1) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process AWS S3 signature.
+      #
+      set $signature_mode "DOWNLOAD";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $aws_tgt_bucket "";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      # Set S3 headers for the request send to the backend.
+      #
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date $x_amz_date;
+
+      # Mandatory otherwise the upstream name will be considered as a part of
+      # the uri when the resquest will be processed in the upstream.
+      #
+      proxy_set_header Host $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+
+      # Enabled keep-alive to backend.
+      #
+      proxy_set_header Connection "keep-alive";
+
+      # Set the shortest range we can.
+      #
+      proxy_set_header Range "bytes=-0";
+
+      # Proxy request to upstream "keepalivepool".
+      #
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
+    }
+
     # Copy an object wih the following syntax:
     #
     # /src_build/tgt_build/object_path

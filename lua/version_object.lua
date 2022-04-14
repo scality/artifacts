@@ -5,16 +5,16 @@ local version, build, object = string.match(ngx.var.canonical_path, "^([^/]+)/([
 
 local url, res
 
--- Check if the versioned object is already present.
+-- Check if the versioned object is already present (see nginx conf to see how /check/ behaves, as it is a bit hackish).
 --
 ngx.say('CHECK IF THE OBJECT IS ALREADY VERSIONED...')
 ngx.flush(true)
-url = "/force_real_request/download/" .. build .. "/.ARTIFACTS_BEFORE/" .. version .. "/" .. object
+url = "/force_real_request/check_raw/" .. build .. "/.ARTIFACTS_BEFORE/" .. version .. "/" .. object
 res = ngx.location.capture(url)
 if res.status == 404 then
   ngx.say('VERSIONED OBJECT NOT FOUND')
   ngx.flush(true)
-elseif res.status == 200 then
+elseif res.status == 416 then
   ngx.say('VERSIONED OBJECT FOUND')
   ngx.say('PASSED')
   ngx.flush(true)
