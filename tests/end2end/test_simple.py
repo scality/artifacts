@@ -125,6 +125,32 @@ class TestSimple(unittest.TestCase):
 
         assert sha_download == sha_upload
 
+    def test_simple_upload_and_version(self):
+
+        # Mimic an upload behind the ingress
+        url = '{artifacts_url}/upload/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        success = 'SUCCESSFUL'.encode('utf-8')
+        upload = self.session.put(url, data=success)
+        assert upload.status_code == 200
+
+        # Mimic a version
+        url = '{artifacts_url}/version/42/{container}/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        copy = self.session.get(url)
+        assert copy.status_code == 200
+
+        # Download the versioned object
+        get = self.session.get('{artifacts_url}/download/{container}/.ARTIFACTS_BEFORE/42/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        ))
+        assert get.status_code == 200
+
     def test_simple_upload_and_copy_behind_ingress(self):
 
         # Mimic an upload behind the ingress
