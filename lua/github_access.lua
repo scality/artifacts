@@ -10,8 +10,21 @@ local github_auth_cache_dir         = "/data/nginx/artifacts_github_auth_cache"
 local github_restriction_users = {}
 local github_restriction_paths = { "/upload/", "/copy/" }
 
-for allowed_user in env_github_restriction_upload:gmatch("([^,]+)") do
-    table.insert(github_restriction_users, allowed_user)
+-- Set default values if needed
+--
+if github_api_enabled == nil then
+    github_api_enabled = "true"
+end
+if github_api_company == nil then
+    github_api_company = "scality"
+end
+
+-- Feed github_restriction_users if neeeded
+--
+if env_github_restriction_upload ~= nil then
+    for allowed_user in env_github_restriction_upload:gmatch("([^,]+)") do
+        table.insert(github_restriction_users, allowed_user)
+    end
 end
 
 function wrong_credentials()
