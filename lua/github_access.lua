@@ -138,7 +138,7 @@ function restriction_check(auth)
     return false
 end
 
-if github_api_enabled == 'true' then
+if github_api_enabled == 'true' and ngx.var.remote_addr ~= '127.0.0.1' then
     local auth = verify_header()
     if not auth then
         return wrong_credentials()
