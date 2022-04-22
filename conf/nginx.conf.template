@@ -180,6 +180,13 @@ http {
     client_header_timeout 600s;
     client_body_timeout 600s;
 
+    # do not merge slashes, and send 404 to urls with
+    # double slashes.
+    merge_slashes off;
+    location ~ // {
+      return 404;
+    }
+
     # Handle status module.
     #
     location /nginx_status {
@@ -325,7 +332,7 @@ http {
 
     # Handle the browsing inside a build.
     #
-    location ~ ^/download/(.*/)$ {
+    location ~ ^/download/(.+/)$ {
       if ($request_method !~ ^(GET|HEAD)$) {
         return 400;
       }
