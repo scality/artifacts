@@ -256,6 +256,10 @@ http {
     #
     rewrite ^/redirect/(.*/)$ /download/$1 last;
 
+    # Handle "/search/" API
+    #
+    rewrite ^/search/(.*)$ /search_metadata/$1 last;
+
     # Hack
     #
     # ngx.location.capture() does not allow request to external url.
@@ -678,8 +682,8 @@ http {
         return 400;
       }
 
-      # Check that we are uploading an object to a staging build
-      if ($canonical_path !~ '^[^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)/') {
+      # Check that we are uploading an object to a staging build or to metadata
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
         return 400;
       }
 
@@ -718,6 +722,52 @@ http {
       # Proxy request to upstream "keepalivepool".
       #
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
+    }
+
+    # Add metadata for a build with the following syntax:
+    #
+    # /github/scality/$(repo)/$(workflow_name)/$(created_at)/$(artifacts_name)?key1=value1&key1=value2&key2=value3
+    #
+    location ~ ^/add_metadata/(.+) {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process metadata update.
+      #
+      content_by_lua_file /etc/nginx/add_metadata.ljbc;
+    }
+
+    # Search a build from metadata with the followg syntax:
+    #
+    # /(list|latest|last_success)/(branch|commit|version|whatever)/github/scality/$(repo)/$(workflow_name)/$(value)
+    #
+    location ~ ^/search_metadata/ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      # Process metadata query.
+      #
+      content_by_lua_file /etc/nginx/search_metadata.ljbc;
     }
   }
 }
