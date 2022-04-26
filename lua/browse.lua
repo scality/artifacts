@@ -27,6 +27,9 @@ local function is_staging (build_name)
     if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "staging%-") then
       return true
     end
+    if build_name == ".METADATA" then
+      return true
+    end
   end
   return false
 end
@@ -179,12 +182,14 @@ local function render_list(mode, entries, buckets)
     local bucket_entries = entries[buckets[i]]
     for j = 1, #bucket_entries do
       local object = bucket_entries[j]
-      if mode == "html" then
-        rendered_object = ngx.escape_uri(object)
-        rendered_object = rendered_object:gsub('%%2F', '/')
-        ngx.print("<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "'>" .. object .. "</a></li>\n")
-      else
-	ngx.print(object .. "\n")
+      if object ~= ".METADATA/" then
+        if mode == "html" then
+          rendered_object = ngx.escape_uri(object)
+          rendered_object = rendered_object:gsub('%%2F', '/')
+          ngx.print("<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "'>" .. object .. "</a></li>\n")
+        else
+	  ngx.print(object .. "\n")
+        end
       end
     end
   end
