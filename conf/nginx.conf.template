@@ -768,8 +768,21 @@ http {
     #/extra/commit/$repo_name/$stage_name/$commit_name/$artifacts_name/.final_status (for commit search)
     #/extra/branch/$repo_name/$stage_name/$branch_name/$artifacts_name/.final_status (for branch search)
     #
-    #location ~ ^/search_metadata/ {
-    #  content_by_lua_file /etc/nginx/search_metadata.lua;
-    #}
+    location ~ ^/search_metadata/ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      # Canonicalize key.
+      #
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      # Apply charset whitelist filtering.
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      content_by_lua_file /etc/nginx/search_metadata.lua;
+    }
   }
 }

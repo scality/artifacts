@@ -97,6 +97,7 @@ COPY lua/find_build.lua /etc/nginx/find_build.lua
 COPY lua/copy_build.lua /etc/nginx/copy_build.lua
 COPY lua/version_object.lua /etc/nginx/version_object.lua
 COPY lua/add_metadata.lua /etc/nginx/add_metadata.lua
+COPY lua/search_metadata.lua /etc/nginx/search_metadata.lua
 COPY lua/browse.lua /etc/nginx/browse.lua
 COPY lua/github_access.lua /etc/nginx/github_access.lua
 
@@ -106,6 +107,7 @@ RUN /usr/local/bin/luajit -b /etc/nginx/find_build.lua /etc/nginx/find_build.ljb
 RUN /usr/local/bin/luajit -b /etc/nginx/copy_build.lua /etc/nginx/copy_build.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/version_object.lua /etc/nginx/version_object.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/add_metadata.lua /etc/nginx/add_metadata.ljbc
+RUN /usr/local/bin/luajit -b /etc/nginx/search_metadata.lua /etc/nginx/search_metadata.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/browse.lua /etc/nginx/browse.ljbc
 RUN /usr/local/bin/luajit -b /etc/nginx/github_access.lua /etc/nginx/github_access.ljbc
 
