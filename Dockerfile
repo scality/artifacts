@@ -3,7 +3,7 @@ FROM ubuntu:xenial
 # Expose port
 EXPOSE 80
 
-# Declare volume where cache objects and request bodies will be stored
+# Declare volume where github auth cache and listing cache will be stored
 VOLUME ["/data/nginx"]
 
 # Download and install requirements for entrypoint scripts and nginx compilation
