@@ -47,10 +47,6 @@ http {
   #
   resolver 8.8.8.8 valid=300s ipv6=off;
 
-  # Volume used to cache objects
-  #
-  proxy_cache_path /data/nginx/cache levels=1:2 keys_zone=download_cache:10m max_size=16g inactive=1d use_temp_path=off;
-
   # The upstream will handle a pool of keep-alive connections to the backend
   # and it will also be used to handle the retries on backend errors.
   #
@@ -485,15 +481,6 @@ http {
       # Enabled keep-alive to backend.
       #
       proxy_set_header Connection "keep-alive";
-      proxy_set_header ForceCacheUpdate "";
-
-      # Cache the object, if possible.
-      #
-      proxy_ignore_headers Cache-Control Expires;
-      proxy_cache_bypass $http_forcecacheupdate;
-      proxy_cache_valid 200 1d;
-      proxy_cache_valid 404 1m;
-      proxy_cache download_cache;
 
       # This will let nginx override the 404 error body sent by upstream in
       # XML with its own content.
