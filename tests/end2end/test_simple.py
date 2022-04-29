@@ -63,6 +63,195 @@ class TestSimple(unittest.TestCase):
         for bucket in self.buckets:
             self.delete_bucket(bucket)
 
+    def test_metadata(self):
+        # generate 3 builds
+        success = 'SUCCESSFUL'.encode('utf-8')
+        failure='FAILED'.encode('utf-8')
+
+        url = '{artifacts_url}/upload/{container}1/.something'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data="")
+        assert upload.status_code == 200
+
+        url = '{artifacts_url}/upload/{container}2/.something'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data="")
+        assert upload.status_code == 200
+
+        url = '{artifacts_url}/upload/{container}3/.something'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data="")
+        assert upload.status_code == 200
+
+        # send metadata for container2
+        url = '{artifacts_url}/add_metadata/github/scality/my_repo/my_workflow/my_created_at_1/{container}2?key1=11&key2=22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+
+        # query list with bad key value
+        url = '{artifacts_url}/search/list/key2/github/scality/my_repo/my_workflow/11'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == ''
+
+        # query list with good key value
+        url = '{artifacts_url}/search/list/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
+
+        # send metadata for container1 and container3
+        url = '{artifacts_url}/add_metadata/github/scality/my_repo/my_workflow/my_created_at_2/{container}1?key1=11&key2=22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        url = '{artifacts_url}/add_metadata/github/scality/my_repo/my_workflow/my_created_at_0/{container}3?key1=11&key2=22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+
+        # query list
+        url = '{artifacts_url}/search/list/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}1\n{container}2\n{container}3\n'.format(container=self.container)
+
+        # query last_success
+        url = '{artifacts_url}/search/last_success/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == ''
+
+        # query latest
+        url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == ''
+
+        # update .final_status for container2 to success
+        url = '{artifacts_url}/upload/{container}2/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data=success)
+        assert upload.status_code == 200
+
+        # update .final_status for container3 to success
+        url = '{artifacts_url}/upload/{container}3/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data=success)
+        assert upload.status_code == 200
+
+        # query list
+        url = '{artifacts_url}/search/list/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}1\n{container}2\n{container}3\n'.format(container=self.container)
+
+        # query last_success
+        url = '{artifacts_url}/search/last_success/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
+
+        # query latest
+        url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
+
+        # update .final_status for container2 to failure
+        url = '{artifacts_url}/upload/{container}2/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data=failure)
+        assert upload.status_code == 200
+
+        # query last_success
+        url = '{artifacts_url}/search/last_success/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}3\n'.format(container=self.container)
+
+        # query latest
+        url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
+
+        # update .final_status for container3 to failure
+        url = '{artifacts_url}/upload/{container}3/.final_status'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        upload = self.session.put(url, data=failure)
+        assert upload.status_code == 200
+
+        # query last_success
+        url = '{artifacts_url}/search/last_success/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == ''
+
+        # query latest
+        url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url)
+        assert request.status_code == 200
+        assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
+
+
     def test_simple_upload_download(self):
 
         # Uploading a generated file
