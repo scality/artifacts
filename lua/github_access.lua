@@ -93,13 +93,17 @@ function authenticate(auth)
         update_cache(auth_md5, res.status)
 
         if res.status ~= 204 then
-            ngx.log(ngx.STDERR, 'User ' .. username .. ' not allowed (github auth cache MISS)')
-            return  false
+            local log_message = '\nUser ' .. username .. ' not allowed (github auth cache MISS)\nInstead of expected 204, github server HTTP response status was: ' .. tostring(res.status) .. '\n'
+            if res.status == 301 or res.status == 302 then
+                log_message = log_message .. '(Location: ' .. res.header['Location'] .. ')\n'
+            end
+            ngx.log(ngx.STDERR, log_message)
+	    return  false
         end
         return true
     else
         if cached_status ~= '204' then
-            ngx.log(ngx.STDERR, 'User ' .. username .. ' not allowed (github auth cache HIT)')
+            ngx.log(ngx.STDERR, '\nUser ' .. username .. ' not allowed (github auth cache HIT)\n')
 	    return false
         end
         return true
