@@ -98,7 +98,8 @@ function authenticate(auth)
                 log_message = log_message .. '(Location: ' .. res.header['Location'] .. ')\n'
             end
             ngx.log(ngx.STDERR, log_message)
-	    return  false
+            ngx.log(ngx.STDERR, 'Body:\n' .. res.body .. '\n')
+            return  false
         end
         return true
     else
