@@ -98,12 +98,6 @@ function authenticate(auth)
                 log_message = log_message .. '(Location: ' .. res.header['Location'] .. ')\n'
             end
             ngx.log(ngx.STDERR, log_message)
-            local zlib = require("zlib")
-            local stream = zlib.inflate()
-            if pcall(function ()  stream(res.body) end) then
-                local inflated_body = stream(res.body)
-                ngx.log(ngx.STDERR, inflated_body)
-            end
 	    return  false
         end
         return true
