@@ -80,35 +80,93 @@ function update_cache(auth_md5, status)
     end
 end
 
+function lock_cache(auth_md5, username)
+    local path = github_auth_cache_dir .. "/" .. auth_md5 .. ".lock"
+    local status = os.execute("mkdir " .. path .. " 2> /dev/null")
+
+    if status ~= 0 then
+        -- Someone else is already in the process of updating this cache entry.
+        -- Wait for the entry to be there.
+        ngx.log(ngx.DEBUG, "cache write already locked for " .. username .. " (" .. auth_md5  .. "), waiting")
+        while read_cache(auth_md5) == nil do
+            ngx.sleep(0.1)
+        end
+        ngx.log(ngx.DEBUG, "cache for " .. username .. " (" .. auth_md5  .. ") ready for read, wait is over")
+    else
+        ngx.log(ngx.DEBUG, "cache write locked for " .. username .. " (" .. auth_md5  .. ")")
+    end
+end
+
+function unlock_cache(auth_md5, username)
+    local path = github_auth_cache_dir .. "/" .. auth_md5 .. ".lock"
+    os.execute("rmdir " .. path .. " 2> /dev/null")
+    ngx.log(ngx.DEBUG, "cache write unlocked for " .. username .. " (" .. auth_md5  .. ")")
+end
+
+function check_github(auth_md5, username)
+    ngx.log(ngx.STDERR, "checking github for " .. username .. " (" .. auth_md5  .. ")")
+    local res =  ngx.location.capture("/force_github_request/orgs/" .. github_api_company .. "/members/" .. username)
+    if res.status ~= 204 then
+        local log_message = '\nInstead of expected 204, github server HTTP response status was: ' .. tostring(res.status) .. '\n'
+        for header_key, header_value in pairs(res.header) do
+            if header_key == "Location" or header_key == "Retry-After" then
+                log_message = log_message .. '(' .. header_key .. ': ' .. res.header[header_key] .. ')\n'
+            end
+        end
+        ngx.log(ngx.STDERR, log_message)
+        ngx.log(ngx.STDERR, 'Body:\n' .. res.body .. '\n')
+    end
+    return res.status
+end
+
 function authenticate(auth)
     local divider = auth:find(':')
     local username = auth:sub(0, divider-1)
     local auth_md5 = ngx.md5(auth)
 
+    local cache_hit = false
     local cached_status = read_cache(auth_md5)
 
     if cached_status == nil then
-        local res =  ngx.location.capture("/force_github_request/orgs/" .. github_api_company .. "/members/" .. username)
+        -- No entry found in cache, do a cache write lock for this entry
+	--
+        lock_cache(auth_md5, username)
 
-        update_cache(auth_md5, res.status)
+	-- Check if the cache has been populated in the meantime
+	--
+        cached_status = read_cache(auth_md5)
 
-        if res.status ~= 204 then
-            local log_message = '\nUser ' .. username .. ' not allowed (github auth cache MISS)\nInstead of expected 204, github server HTTP response status was: ' .. tostring(res.status) .. '\n'
-            if res.status == 301 or res.status == 302 then
-                log_message = log_message .. '(Location: ' .. res.header['Location'] .. ')\n'
-            end
-            ngx.log(ngx.STDERR, log_message)
-            ngx.log(ngx.STDERR, 'Body:\n' .. res.body .. '\n')
-            return  false
+	if cached_status == nil then
+            -- Still no cache entry, make a github request
+	    --
+	    local status = check_github(auth_md5, username)
+	    -- Update cache
+	    --
+            update_cache(auth_md5, status)
+	    cached_status = read_cache(auth_md5)
+        else
+            cache_hit = true
         end
-        return true
+
+        -- Unlock the cache entry
+	--
+        unlock_cache(auth_md5, username)
+
     else
-        if cached_status ~= '204' then
-            ngx.log(ngx.STDERR, '\nUser ' .. username .. ' not allowed (github auth cache HIT)\n')
-	    return false
-        end
-        return true
+        cache_hit = true
     end
+
+
+    if cached_status ~= '204' then
+        if cache_hit == true then
+            ngx.log(ngx.STDERR, '\nUser ' .. username .. ' not allowed (github auth cache HIT)\n')
+        else
+	    ngx.log(ngx.STDERR, '\nUser ' .. username .. ' not allowed (github auth cache MISS)\n')
+        end
+        return false
+    end
+
+    return true
 end
 
 function verify_header()
