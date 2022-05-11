@@ -8,7 +8,7 @@ local github_api_company            = os.getenv('GITHUB_API_COMPANY')
 local env_github_restriction_upload = os.getenv('GITHUB_USER_ALLOWED_UPLOAD')
 local github_auth_cache_dir         = "/data/nginx/artifacts_github_auth_cache"
 local github_restriction_users = {}
-local github_restriction_paths = { "/upload/", "/copy/" }
+local github_restriction_paths = { "/upload/", "/copy/", "/add_metadata/" }
 
 -- Set default values if needed
 --

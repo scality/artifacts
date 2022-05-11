@@ -672,6 +672,13 @@ class TestExternalBasicAuthentication(unittest.TestCase):
         copy = self.session.get(url)
         assert copy.status_code == 403
 
+        # Mimic a metadata upload
+        url = '{artifacts_url}/add_metadata/fake/args'.format(
+            artifacts_url=self.artifacts_url
+        )
+        copy = self.session.get(url)
+        assert copy.status_code == 403
+
     def test_fail_user(self):
         self.session.auth = ('username-fail', 'fake-password')
 
