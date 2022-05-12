@@ -67,7 +67,7 @@ end
 -- Get entries from cache
 --
 local function get_lists_from_cache()
-  cached_listing = read_file("/data/nginx/artifacts_full_listing_cache/listing")
+  local cached_listing = read_file("/data/nginx/artifacts_full_listing_cache/listing")
   if cached_listing == nil then
     return nil
   end
@@ -184,7 +184,7 @@ local function render_list(mode, entries, buckets)
       local object = bucket_entries[j]
       if not (object == ".md_staging/" and ngx.var.canonical_path == "") then
         if mode == "html" then
-          rendered_object = ngx.escape_uri(object)
+          local rendered_object = ngx.escape_uri(object)
           rendered_object = rendered_object:gsub('%%2F', '/')
           ngx.print("<li class='list-group-item'><span class='glyphicon glyphicon-folder-open' aria-hidden='true'>&nbsp;</span><a href ='./" .. rendered_object .. "'>" .. object .. "</a></li>\n")
         else
