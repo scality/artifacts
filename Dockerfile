@@ -8,10 +8,7 @@ VOLUME ["/data/nginx"]
 
 # Download and install requirements for entrypoint scripts and nginx compilation
 RUN apt-get update && \
-    apt-get install --no-install-recommends --no-upgrade --assume-yes curl ca-certificates dnsutils wget gcc make libpcre3-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev lua5.1 lua5.1-dev liblua5.1-dev
-
-RUN cp /usr/lib/x86_64-linux-gnu/liblua5.1.so.0.0.0 /usr/lib/liblua.so
-
+    apt-get install --no-install-recommends --no-upgrade --assume-yes curl ca-certificates dnsutils wget gcc make libpcre3-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
 
 # Define components versions
 ENV LUA_RESTY_CORE 0.1.17
@@ -21,15 +18,8 @@ ENV NGX_DEVEL_KIT_VERSION 0.3.1
 ENV LUA_NGINX_MODULE_VERSION 0.10.15
 ENV SET_MISC_NGINX_MODULE 0.32
 ENV NGINX_VERSION 1.16.1
-ENV LUA_ZLIB v1.2
 
 WORKDIR /tmp
-
-RUN whereis lua5.1.so
-RUN wget https://github.com/brimworks/lua-zlib/archive/refs/tags/${LUA_ZLIB}.tar.gz -O lua-zlib.tar.gz && \
-    mkdir lua-zlib && \
-    tar zxf lua-zlib.tar.gz -C lua-zlib --strip-components=1
-RUN mkdir -p /usr/local/lib/lua/5.1 &&  cd lua-zlib && make linux && cp zlib.so /usr/local/lib/lua/5.1
 
 # Download build and install lua-resty-core
 RUN wget https://github.com/openresty/lua-resty-core/archive/v${LUA_RESTY_CORE}.tar.gz -O lua-resty-core.tar.gz && \

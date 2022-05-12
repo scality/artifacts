@@ -39,6 +39,7 @@ table.sort(builds)
 
 -- Process results
 --
+local uniq_list = {}
 for i = #builds, 1, -1 do
   local artifacts_name = string.match(builds[i], "^[^/]+/([^/]+)$")
   if artifacts_name ~= nil then
@@ -52,8 +53,15 @@ for i = #builds, 1, -1 do
         end
       end
     else
-      ngx.say(artifacts_name)
-      ngx.flush(true)
+      -- Remove duplicates
+      --
+      if uniq_list[artifacts_name] == nil then
+        ngx.say(artifacts_name)
+        ngx.flush(true)
+        uniq_list[artifacts_name] = true
+      else
+        ngx.log(ngx.STDERR, "found multiple timestamps for " .. artifacts_name .. " metadata")
+      end
     end
   end
 end
