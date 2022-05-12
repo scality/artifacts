@@ -9,6 +9,7 @@ local env_github_restriction_upload = os.getenv('GITHUB_USER_ALLOWED_UPLOAD')
 local github_auth_cache_dir         = "/data/nginx/artifacts_github_auth_cache"
 local github_restriction_users = {}
 local github_restriction_paths = { "/upload/", "/copy/" }
+local error_message = '<br/><h2>You are not allowed to connect to artifacts, maybe look in the documentation we got about it: <a href=https://github.com/scality/action-docs/blob/main/artifacts.md>link</a><h2>'
 
 -- Set default values if needed
 --
@@ -31,12 +32,16 @@ function wrong_credentials()
    ngx.header.content_type = 'text/plain'
    ngx.header['WWW-Authenticate'] = 'Basic realm="Access to the Scality Artifacts", charset="UTF-8"'
    ngx.status = ngx.HTTP_UNAUTHORIZED
+	 ngx.header["Content-Type"] =  "text/html"
+	 ngx.say('<html><head><title>401 Not Authorized</title></head><body><center><h1>401 Not Authorized</h1></center><hr><center>nginx'.. error_message .. '</center></body><html>')
    return ngx.exit(ngx.HTTP_UNAUTHORIZED)
 end
 
 function not_allowed()
    ngx.header.content_type = 'text/plain'
    ngx.status = ngx.HTTP_FORBIDDEN
+	 ngx.header["Content-Type"] =  "text/html"
+	 ngx.say('<html><head><title>403 Forbidden</title></head><body><center><h1>403 Forbidden</h1></center><hr><center>nginx'.. error_message .. '</center></body><html>')
    return ngx.exit(ngx.HTTP_FORBIDDEN)
 end
 
