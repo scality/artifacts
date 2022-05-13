@@ -110,21 +110,31 @@ end
 
 function check_github(auth_md5, username)
     ngx.log(ngx.STDERR, "checking github for " .. username .. " (" .. auth_md5  .. ")")
-    local res =  ngx.location.capture("/force_github_request/orgs/" .. github_api_company .. "/members/" .. username)
-    if res.status ~= 204 then
-        local log_message = '\nInstead of expected 204, github server HTTP response status was: ' .. tostring(res.status) .. '\n'
-        for header_key, header_value in pairs(res.header) do
-            if header_key == "Location" or header_key == "Retry-After" then
-                log_message = log_message .. '(' .. header_key .. ': ' .. res.header[header_key] .. ')\n'
-            end
-        end
-        ngx.log(ngx.STDERR, log_message)
-        ngx.log(ngx.STDERR, 'Body:\n' .. res.body .. '\n')
+
+    -- authenticate
+    --
+    local res = ngx.location.capture("/force_github_request/user")
+    local username_from_token = nil
+    if res.status == 200 then
+        username_from_token = string.match(res.body, '"login": "([^"]+)",')
     end
-    return res.status
+    if res.status ~= 200 or username ~= username_from_token then
+        ngx.log(ngx.STDERR, "authentication failed for " .. username .. " (" .. res.status .. ")")
+        return "FORBIDDEN"
+    end
+
+    -- authorize
+    --
+    local res = ngx.location.capture("/force_github_request/orgs/" .. github_api_company .. "/members/" .. username)
+    if res.status ~= 204 then
+        ngx.log(ngx.STDERR, "authorization failed for " .. username .. " (" .. res.status .. ")")
+        return "FORBIDDEN"
+    end
+
+    return "GRANTED"
 end
 
-function authenticate(auth)
+function authenticate_and_authorize(auth)
     local divider = auth:find(':')
     local username = auth:sub(0, divider-1)
     local auth_md5 = ngx.md5(auth)
@@ -162,7 +172,7 @@ function authenticate(auth)
     end
 
 
-    if cached_status ~= '204' then
+    if cached_status ~= "GRANTED" then
         if cache_hit == true then
             ngx.log(ngx.STDERR, '\nUser ' .. username .. ' not allowed (github auth cache HIT)\n')
         else
@@ -225,7 +235,7 @@ if github_api_enabled == 'true' and ngx.var.remote_addr ~= '127.0.0.1' then
         return wrong_credentials()
     end
 
-    local user = authenticate(auth)
+    local user = authenticate_and_authorize(auth)
     if not user then
         return not_allowed()
     end

@@ -1,4 +1,5 @@
-FROM nginx:1.18
+FROM openresty/openresty:1.19.9.1-alpine
 
 EXPOSE 5050
-COPY ./nginx.conf /etc/nginx/nginx.conf
+
+COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
