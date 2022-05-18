@@ -264,12 +264,27 @@ http {
     #
     location /force_github_request/ {
       # Not exposed to external requests.
-      # Set `proxy_set_header Host $host;` will make api call to github always fail
       internal;
-      proxy_pass __GITHUB_API_URL__/;
+
+      # Remove all request headers but Authorization
+      access_by_lua_block {
+        for header_key, header_value in pairs(ngx.req.get_headers()) do
+          if header_key ~= "authorization" then
+            ngx.req.clear_header(header_key)
+          end
+        end
+      }
+
+      # We need a valid and known user-agent otherwise github rejects the request
+      proxy_set_header User-Agent "curl/7.83.1";
+
+      # Tell gihub we do not want compressed body in its response
       proxy_set_header Accept-Encoding identity;
+
       proxy_set_header Accept application/vnd.github.v3+json;
       proxy_set_header Host api.github.com;
+
+      proxy_pass __GITHUB_API_URL__/;
     }
 
     # Hack
