@@ -84,6 +84,8 @@ jobs:
           GITHUB_API_COMPANY: scality
           GITHUB_API_ENABLED: "true"
           GITHUB_USER_ALLOWED_UPLOAD: "username-pass"
+          BOT_USERNAME: "botuser"
+          BOT_TOKEN: "botpass"
     needs:
       - publish
     steps:

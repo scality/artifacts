@@ -644,6 +644,17 @@ class TestExternalBasicAuthentication(unittest.TestCase):
         upload = self.session.put(url, data=success, headers={'Script-Name': '/foo'})
         assert upload.status_code == 200
 
+    def test_local_bot_user(self):
+        self.session.auth = ('botuser', 'botpass')
+
+        # Mimic a download
+        url = '{artifacts_url}/download/{container}'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        listing = self.session.get(url)
+        assert listing.status_code == 404
+
     def test_successful_user_not_allowed_to_restricted_paths (self):
         self.session.auth = ('username-pass-no-restricted-paths', 'fake-password')
 

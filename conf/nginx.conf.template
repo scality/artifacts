@@ -11,6 +11,8 @@ env AWS_SECRET_ACCESS_KEY;
 env GITHUB_API_COMPANY;
 env GITHUB_API_ENABLED;
 env GITHUB_USER_ALLOWED_UPLOAD;
+env BOT_USERNAME;
+env BOT_TOKEN;
 
 # Google Cloud Storage S3 compatible bucket prefix.
 env AWS_BUCKET_PREFIX;

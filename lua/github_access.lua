@@ -7,8 +7,12 @@ local github_api_enabled            = os.getenv('GITHUB_API_ENABLED')
 local github_api_company            = os.getenv('GITHUB_API_COMPANY')
 local env_github_restriction_upload = os.getenv('GITHUB_USER_ALLOWED_UPLOAD')
 local github_auth_cache_dir         = "/data/nginx/artifacts_github_auth_cache"
-local github_restriction_users = {}
-local github_restriction_paths = { "/upload/", "/copy/", "/add_metadata/" }
+local github_restriction_users      = {}
+local github_restriction_paths      = { "/upload/", "/copy/", "/add_metadata/" }
+local bot_username                  = os.getenv('BOT_USERNAME')
+local bot_token                     = os.getenv('BOT_TOKEN')
+local local_bot_creds_enabled       = false
+
 local error_message = '<br/><h2>You are not allowed to connect to artifacts, for more information on how to connect, check the <a href=https://github.com/scality/action-docs/blob/main/artifacts.md>documentation</a><h2>'
 
 -- Set default values if needed
@@ -26,6 +30,12 @@ if env_github_restriction_upload ~= nil then
     for allowed_user in env_github_restriction_upload:gmatch("([^,]+)") do
         table.insert(github_restriction_users, allowed_user)
     end
+end
+
+-- Detect if we have to use local bot creds
+--
+if bot_username ~= nil and bot_username ~= "" and bot_token ~= nil and bot_token ~= "" then
+    local_bot_creds_enabled = true
 end
 
 function wrong_credentials()
@@ -137,7 +147,16 @@ end
 function authenticate_and_authorize(auth)
     local divider = auth:find(':')
     local username = auth:sub(0, divider-1)
+    local token = auth:sub(divider+1)
     local auth_md5 = ngx.md5(auth)
+
+    if local_bot_creds_enabled == true and username == bot_username then
+        if token == bot_token then
+            return true
+        end
+        ngx.log(ngx.STDERR, '\nUser ' .. username .. ' not allowed (forbidden by local bot creds)\n')
+        return false
+    end
 
     local cache_hit = false
     local cached_status = read_cache(auth_md5)
