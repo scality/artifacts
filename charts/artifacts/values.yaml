@@ -20,6 +20,11 @@ githubApiBasicAuth:
   ##
   enabled: 'true'
 
+  ## Set local creds
+  ##
+  botUsername: ''
+  botToken: ''
+
   ## Allowed users to upload files to artifacts
   ##
   githubUsernameAllowedToUpload: []
