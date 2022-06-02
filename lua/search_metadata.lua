@@ -47,8 +47,13 @@ for i = #builds, 1, -1 do
       local res = check_build_status(artifacts_name)
       if res ~= nil then
         if (search_mode == "last_success" and res == "SUCCESSFUL") or (search_mode == "latest" and res ~= "INCOMPLETE") then
-          ngx.say(artifacts_name)
-          ngx.flush(true)
+          if ngx.var.arg_output == "redirect" then
+            local redirect_url = "/download/" .. artifacts_name .. "/"
+            return ngx.redirect(redirect_url, ngx.HTTP_MOVED_TEMPORARILY);
+          else
+            ngx.say(artifacts_name)
+            ngx.flush(true)
+          end
 	  break
         end
       end
@@ -64,4 +69,10 @@ for i = #builds, 1, -1 do
       end
     end
   end
+end
+
+-- If there is no match in redirect mode, send a 404.
+--
+if (search_mode == "last_success" or search_mode == "latest") and ngx.var.arg_output == "redirect" then
+  return ngx.exit(ngx.HTTP_NOT_FOUND);
 end
