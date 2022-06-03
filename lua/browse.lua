@@ -12,7 +12,7 @@ local build_prefixes = { "dev%-", "preprod%-", "" }
 --
 local function is_promoted(build_name)
   for i=1, #build_prefixes do
-    if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "promoted%-") then
+    if build_name:match("^[a-z]+:[%-a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "promoted%-") then
       return true
     end
   end
@@ -24,7 +24,7 @@ end
 --
 local function is_staging (build_name)
   for i=1, #build_prefixes do
-    if build_name:match("^[a-z]+:[a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "staging%-") then
+    if build_name:match("^[a-z]+:[%-a-z]+:[%-A-Za-z0-9]+:" .. build_prefixes[i] .. "staging%-") then
       return true
     end
     if build_name == ".md_staging" then
