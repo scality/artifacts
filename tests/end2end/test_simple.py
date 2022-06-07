@@ -216,6 +216,15 @@ class TestSimple(unittest.TestCase):
         assert request.status_code == 200
         assert request.content.decode("utf-8") == '{container}3\n'.format(container=self.container)
 
+        # query last_success in redirect mode
+        url = '{artifacts_url}/search/last_success/key2/github/scality/my_repo/my_workflow/22?output=redirect'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url, allow_redirects=False)
+        assert request.status_code == 302
+        assert request.headers['Location'] == '/download/{container}3/'.format(container=self.container)
+
         # query latest
         url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22'.format(
             artifacts_url=self.artifacts_url,
@@ -224,6 +233,15 @@ class TestSimple(unittest.TestCase):
         request = self.session.get(url)
         assert request.status_code == 200
         assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
+
+        # query latest in redirect mode
+        url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22?output=redirect'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url, allow_redirects=False)
+        assert request.status_code == 302
+        assert request.headers['Location'] == '/download/{container}2/'.format(container=self.container)
 
         # update .final_status for container3 to failure
         url = '{artifacts_url}/upload/{container}3/.final_status'.format(
@@ -242,6 +260,14 @@ class TestSimple(unittest.TestCase):
         assert request.status_code == 200
         assert request.content.decode("utf-8") == ''
 
+        # query last_success in redirect mode
+        url = '{artifacts_url}/search/last_success/key2/github/scality/my_repo/my_workflow/22?output=redirect'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url, allow_redirects=False)
+        assert request.status_code == 404
+
         # query latest
         url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22'.format(
             artifacts_url=self.artifacts_url,
@@ -251,6 +277,14 @@ class TestSimple(unittest.TestCase):
         assert request.status_code == 200
         assert request.content.decode("utf-8") == '{container}2\n'.format(container=self.container)
 
+        # query latest in redirect mode
+        url = '{artifacts_url}/search/latest/key2/github/scality/my_repo/my_workflow/22?output=redirect'.format(
+            artifacts_url=self.artifacts_url,
+            container=self.container
+        )
+        request = self.session.get(url, allow_redirects=False)
+        assert request.status_code == 302
+        assert request.headers['Location'] == '/download/{container}2/'.format(container=self.container)
 
     def test_simple_upload_download(self):
 
