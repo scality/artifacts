@@ -660,7 +660,7 @@ http {
 
     # Version an object with the following syntax:
     #
-    # /version/object_path
+    # /version/current_version_number/object_path
     #
     location ~ ^/version/([0-9]+)/([^/]+/.*[^/])$ {
       if ($request_method != GET) {
