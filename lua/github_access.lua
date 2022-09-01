@@ -13,7 +13,7 @@ local bot_username                  = os.getenv('BOT_USERNAME')
 local bot_token                     = os.getenv('BOT_TOKEN')
 local local_bot_creds_enabled       = false
 
-local error_message = '<br/><h2>You are not allowed to connect to artifacts, for more information on how to connect, check the <a href=https://github.com/scality/action-docs/blob/main/artifacts.md>documentation</a><h2>'
+local error_message = '<br/><h2>You are not allowed to connect to artifacts, for more information on how to connect, check the <a href=https://devdocs.scality.net/support/faq/#artifacts>documentation</a><h2>'
 
 -- Set default values if needed
 --
