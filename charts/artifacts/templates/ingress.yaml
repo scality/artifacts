@@ -41,8 +41,10 @@ spec:
       paths:
         - path: {{ .path | quote }}
           backend:
-            serviceName: {{ template "fullname" $ }}
-            servicePort: {{ $.Values.deployment.service.port }}
+            service:
+              name: {{ template "fullname" $ }}
+              port:
+                number: {{ $.Values.deployment.service.port }}
   {{- if .tls }}
   tls:
   - hosts:
