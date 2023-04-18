@@ -16,7 +16,7 @@ data:
   auth: {{ list .basicAuth.username .basicAuth.passwordHash | join ":" | b64enc | quote }}
 {{- end }}
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ template "fullname" $ }}
