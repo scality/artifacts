@@ -40,6 +40,7 @@ spec:
     http:
       paths:
         - path: {{ .path | quote }}
+          pathType: Prefix
           backend:
             service:
               name: {{ template "fullname" $ }}
