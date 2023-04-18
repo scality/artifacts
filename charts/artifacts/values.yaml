@@ -49,15 +49,15 @@ cloudStorage:
 image:
   ## regitry to pull from.
   ##
-  registry: docker.io
+  registry: registry.scality.com
 
   ## repository on the registry to pull from.
   ##
-  repository: scality/artifacts
+  repository: artifacts/artifacts
 
   ## tag specifies the version to deploy.
   ##
-  tag: 3.0.0
+  tag: 4.2.13
 
   ## pullPolicy specifies the image pull policy
   ##
