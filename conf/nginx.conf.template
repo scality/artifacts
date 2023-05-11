@@ -784,5 +784,18 @@ http {
       #
       content_by_lua_file /etc/nginx/search_metadata.ljbc;
     }
+
+    # Healthcheck.
+    #
+    location /_healthz {
+      # authorize request from local network only
+      limit_except GET {
+        allow 127.0.0.1;
+        allow 192.168.1.0/24;
+        deny all;
+      }
+      return 200;
+
+    }
   }
 }

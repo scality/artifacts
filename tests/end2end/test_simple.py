@@ -768,3 +768,16 @@ class TestExternalBasicAuthentication(unittest.TestCase):
         success = 'SUCCESSFUL'.encode('utf-8')
         upload = self.session.put(url, data=success, headers={'Script-Name': '/foo'})
         assert upload.status_code == 401
+
+    def test_healthcheck(self):
+        """Test a successful healthcheck."""
+        url = f'{self.artifacts_url}/_healthz'
+        health = self.session.get(url)
+        assert health.status_code == 200
+
+    def test_healthcheck_fail(self):
+        """Healthcheck fails when a method other than GET is used."""
+        url = f'{self.artifacts_url}/_healthz'
+        health = self.session.put(url)
+        # PUT is not allowed
+        assert health.status_code == 403
