@@ -96,6 +96,22 @@ deployment:
         cpu: "2"
         memory: "2Gi"
 
+    ## Configure the liveness probe to check if the pod is still running.
+    livenessProbe:
+      initialDelaySeconds: 10
+      periodSeconds: 30
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 5
+
+    ## Configure the readiness probe to check if the pod is ready to serve traffic.
+    readinessProbe:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 3
+
   ## Configure the ingress resource that allows you to access the service.
   ingress:
     ## enabled sets the ingress record generation or not.
