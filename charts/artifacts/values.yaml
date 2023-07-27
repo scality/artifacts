@@ -49,11 +49,11 @@ cloudStorage:
 image:
   ## regitry to pull from.
   ##
-  registry: registry.scality.com
+  registry: ghcr.io
 
   ## repository on the registry to pull from.
   ##
-  repository: artifacts/artifacts
+  repository: scality/artifacts
 
   ## tag specifies the version to deploy.
   ##
