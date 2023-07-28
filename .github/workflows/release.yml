@@ -38,8 +38,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          build-args: |
-            VERSION=${{ inputs.tag }}
           tags: |
             ghcr.io/scality/artifacts:${{ inputs.tag }}
 
