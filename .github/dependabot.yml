@@ -41,10 +41,3 @@ updates:
     labels:
       - docker
       - dependencies
-    groups:
-      docker:
-        patterns:
-          - "*"
-        update-types:
-          - patch
-          - minor
