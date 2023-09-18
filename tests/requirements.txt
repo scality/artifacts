@@ -1,4 +1,4 @@
 pytest==5.3.5
-boto3==1.11.12
+boto3==1.28.49
 requests==2.22.0
 buildbot-worker==2.0.1
