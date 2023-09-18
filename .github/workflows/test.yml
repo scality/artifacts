@@ -11,6 +11,9 @@ on:
       - 'w/**'
       - 'q/**'
 
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   publish:
