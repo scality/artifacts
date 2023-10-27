@@ -7,6 +7,8 @@ nameOverride: "artifacts"
 ## fullnameOverride allows to change the full name of resources
 fullnameOverride:
 
+podAnnotations: {}
+
 githubApiBasicAuth:
   ## githubApiUrl contains the api url to check the auth connection
   ##
