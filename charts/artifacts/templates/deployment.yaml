@@ -57,6 +57,10 @@ spec:
             path: /_healthz
             port: http
 {{ toYaml .Values.deployment.artifacts.livenessProbe | indent 10 }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","nginx -s quit; while killall -0 nginx; do sleep 1; done"]
       volumes:
       - name: cache
         emptyDir: {}
