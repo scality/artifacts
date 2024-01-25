@@ -80,7 +80,7 @@ deployment:
   ## default: min = 1 and max = 1 (i.e. one at all times)
   ##
   minReplicas: 1
-  maxReplicas: 2
+  maxReplicas: 1
 
   ## autoscalerSpec contains the dictionnary to insert in place
   ## of criterias to meet to scale up and down.
