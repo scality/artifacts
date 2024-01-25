@@ -80,13 +80,25 @@ deployment:
   ## default: min = 1 and max = 1 (i.e. one at all times)
   ##
   minReplicas: 1
-  maxReplicas: 1
+  maxReplicas: 2
 
   ## autoscalerSpec contains the dictionnary to insert in place
   ## of criterias to meet to scale up and down.
   ##
   autoscalerSpec:
-    targetCPUUtilizationPercentage: 90
+    metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: 500Mi
 
   artifacts:
     ## Configure resource requests and limits
