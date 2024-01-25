@@ -13,4 +13,16 @@ spec:
     name: {{ template "fullname" $ }}
   minReplicas: {{ .Values.deployment.minReplicas }}
   maxReplicas: {{ .Values.deployment.maxReplicas }}
-{{ toYaml .Values.deployment.autoscalerSpec | indent 2 }}
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: AverageValue
+        averageValue: {{ .Values.deployment.autoscalerSpec.memoryUtilization }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.deployment.autoscalerSpec.cpuUtilization }}
