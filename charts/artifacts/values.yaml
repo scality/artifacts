@@ -86,7 +86,19 @@ deployment:
   ## of criterias to meet to scale up and down.
   ##
   autoscalerSpec:
-    targetCPUUtilizationPercentage: 90
+    metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: AverageValue
+          averageValue: 500Mi
 
   artifacts:
     ## Configure resource requests and limits
