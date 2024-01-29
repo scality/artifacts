@@ -1,4 +1,4 @@
 pytest==7.4.4
 boto3==1.28.68
 requests==2.22.0
-buildbot-worker==3.9.2
+buildbot-worker==3.11.0
