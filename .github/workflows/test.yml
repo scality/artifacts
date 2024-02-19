@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   publish:
-    uses: scality/workflows/.github/workflows/docker-build.yaml@v1
+    uses: scality/workflows/.github/workflows/docker-build.yaml@v2
     strategy:
       matrix:
         image:
