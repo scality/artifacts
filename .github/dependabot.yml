@@ -11,9 +11,6 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    commit-message:
-      prefix: github-actions
-      include: scope
     labels:
       - github-actions
       - dependencies
@@ -22,9 +19,6 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    commit-message:
-      prefix: pip
-      include: scope
     labels:
       - pip
       - dependencies
@@ -35,9 +29,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    commit-message:
-      prefix: docker
-      include: scope
     labels:
       - docker
       - dependencies
