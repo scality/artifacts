@@ -7,6 +7,8 @@ nameOverride: "artifacts"
 ## fullnameOverride allows to change the full name of resources
 fullnameOverride:
 
+podAnnotations: {}
+
 githubApiBasicAuth:
   ## githubApiUrl contains the api url to check the auth connection
   ##
@@ -84,7 +86,8 @@ deployment:
   ## of criterias to meet to scale up and down.
   ##
   autoscalerSpec:
-    targetCPUUtilizationPercentage: 90
+    cpuUtilization: 50
+    memoryUtilization: 500Mi
 
   artifacts:
     ## Configure resource requests and limits
