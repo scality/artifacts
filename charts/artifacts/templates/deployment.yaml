@@ -9,7 +9,6 @@ metadata:
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 spec:
-  replicas: {{ .Values.deployment.minReplicas }}
   selector:
     matchLabels:
       app: {{ template "fullname" $ }}
