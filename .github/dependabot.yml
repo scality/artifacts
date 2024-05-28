@@ -12,7 +12,6 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - github-actions
       - dependencies
 
   - package-ecosystem: pip
@@ -20,7 +19,6 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - pip
       - dependencies
 
   - package-ecosystem: docker
@@ -30,5 +28,4 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - docker
       - dependencies
