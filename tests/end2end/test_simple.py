@@ -638,6 +638,11 @@ class TestSimple(unittest.TestCase):
         ), headers={'Script-Name': '/foo'})
         assert 'Location' not in req.headers
 
+    def test_nginx_status(self):
+        req = self.session.get(f"{self.artifacts_url}/nginx_status")
+        assert req.status_code == 200
+        assert "Active connections" in req.text
+
 
 @pytest.mark.usefixtures("s3_client", "container", "artifacts_url", "buckets")
 class TestExternalBasicAuthentication(unittest.TestCase):
