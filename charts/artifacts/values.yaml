@@ -186,4 +186,4 @@ deployment:
   ## Affinity for pod assignment
   ##
   affinity: {}
-  terminationGracePeriodSeconds: 300
+  terminationGracePeriodSeconds: 600

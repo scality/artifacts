@@ -638,6 +638,19 @@ class TestSimple(unittest.TestCase):
         ), headers={'Script-Name': '/foo'})
         assert 'Location' not in req.headers
 
+    def test_nginx_status(self):
+        # assert "Active connections: 1" in req.text
+        # retry as much as needed in case there is more active connections from other
+        # tests running
+        for _ in range(10):
+            req = self.session.get(f"{self.artifacts_url}/nginx_status")
+            if "Active connections: 1 \n" in req.text:
+                break
+            if _ == 9:
+                assert False, "Active connections: 1 not found in nginx_status"
+            time.sleep(1)
+
+
 
 @pytest.mark.usefixtures("s3_client", "container", "artifacts_url", "buckets")
 class TestExternalBasicAuthentication(unittest.TestCase):
