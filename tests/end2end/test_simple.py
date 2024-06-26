@@ -53,7 +53,7 @@ class TestSimple(unittest.TestCase):
         os.remove(filename)
 
     def setUp(self):
-        self.session = requests.Session()
+        self.session = requests.Session(config={'keep_alive': False})
         self.session.auth = ('username-pass', 'fake-password')
         self.s3_healthcheck()
         for bucket in self.buckets:
@@ -641,7 +641,7 @@ class TestSimple(unittest.TestCase):
     def test_nginx_status(self):
         req = self.session.get(f"{self.artifacts_url}/nginx_status")
         assert req.status_code == 200
-        assert "Active connections" in req.text
+        assert "Active connections: 1\n" in req.text
 
 
 @pytest.mark.usefixtures("s3_client", "container", "artifacts_url", "buckets")
