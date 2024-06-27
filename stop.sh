@@ -7,7 +7,7 @@ echo "Stopping nginx..."
 sleep 5
 
 # retrieve nginx status and check if there's any active connection
-ACTIVE_CONNECTION=""
+ACTIVE_CONNECTION="0"
 
 while [ ${ACTIVE_CONNECTION} != "1" ]; do
   ACTIVE_CONNECTION=$(curl -s http://localhost/nginx_status | grep 'Active connections' | awk '{print $3}')
@@ -17,8 +17,3 @@ done
 
 PID=$(cat /run/nginx.pid)
 nginx -s quit
-
-echo "Waiting for nginx PID: ${PID} to stop..."
-while [ -d /proc/$PID ]; do
-  sleep 0.1
-done
