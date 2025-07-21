@@ -76,7 +76,7 @@ do
         echo "."$j" "${MIMETYPE[0]}";" >> /etc/nginx/mimetypes.map
     done
 done
-echo ".log text/plain;" >> /etc/nginx/mimetypes.map
+echo " .log \"text/plain; charset=utf-8\";" >> /etc/nginx/mimetypes.map
 echo ".stdout text/plain;" >> /etc/nginx/mimetypes.map
 echo ".stderr text/plain;" >> /etc/nginx/mimetypes.map
 echo "}" >> /etc/nginx/mimetypes.map
