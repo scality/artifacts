@@ -48,6 +48,12 @@ cloudStorage:
   ##
   endpointUrl: https://storage.googleapis.com
 
+  ## awsXmlNamespace contains the XML namespace for S3 ListBucket responses.
+  ## If not set, defaults to GCS format: http://doc.s3.amazonaws.com/2006-03-01
+  ## For AWS S3 : http://s3.amazonaws.com/doc/2006-03-01/
+  ##
+  awsXmlNamespace: ""
+
 image:
   ## regitry to pull from.
   ##
