@@ -32,7 +32,7 @@ spec:
       {{- end }}
       containers:
       - name: artifacts
-        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}/artifacts:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
         envFrom:
         - secretRef:
