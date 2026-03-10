@@ -99,7 +99,12 @@ function lock_cache(auth_md5, username)
     local path = github_auth_cache_dir .. "/" .. auth_md5 .. ".lock"
     local status = os.execute("mkdir " .. path .. " 2> /dev/null")
 
-    if status ~= 0 then
+    -- In OpenResty 1.29.x / LuaJIT with Lua 5.2 semantics, os.execute returns
+    -- true on success and nil on failure (not integer exit codes as in Lua 5.1).
+    -- The original check `status ~= 0` is always true in both cases under Lua 5.2,
+    -- so we need to check for the boolean true to detect a successful mkdir.
+    local lock_created = (status == true) or (status == 0)
+    if not lock_created then
         -- Someone else is already in the process of updating this cache entry.
         -- Wait for the entry to be there.
         ngx.log(ngx.DEBUG, "cache write already locked for " .. username .. " (" .. auth_md5  .. "), waiting")
@@ -246,6 +251,14 @@ function restriction_check(auth)
 
     ngx.log(ngx.STDERR, 'User ' .. username .. ' not allowed for restricted access to ' .. location)
     return false
+end
+
+-- Skip auth for the internal github API proxy location to prevent deadlock:
+-- ngx.location.capture("/force_github_request/...") triggers this access_by_lua_file
+-- again, and the cache lock mechanism would deadlock since the parent request holds
+-- the lock while waiting for the subrequest to complete.
+if string.sub(ngx.var.uri, 1, 21) == "/force_github_request" then
+    return
 end
 
 if github_api_enabled == 'true' and ngx.var.remote_addr ~= '127.0.0.1' then
