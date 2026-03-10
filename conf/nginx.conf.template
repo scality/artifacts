@@ -251,7 +251,11 @@ http {
 
     # Handle "/builds/" location to keep backward compatibility with the
     # previous artifacts implementations.
+    # File downloads (build_name/path, no trailing slash) are redirected to
+    # /redirect/ so the client downloads directly from S3 via presigned URL.
+    # Directory listings (trailing slash) continue to use /download/.
     #
+    rewrite ^/builds/([^/]+/.+[^/])$ /redirect/$1 redirect;
     rewrite ^/builds/(.*)$ /download/$1 last;
 
     # Handle subdir listing under "/redirect/"
