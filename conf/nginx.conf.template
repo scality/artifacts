@@ -23,7 +23,7 @@ env AWS_BUCKET_PREFIX;
 # It is recommended to set one worker process per CPU core.
 pid /run/nginx.pid;
 
-worker_processes 2;
+worker_processes auto;
 
 # The maximum number of connections allowed to a worker.
 events {
@@ -95,15 +95,15 @@ http {
     # Max number of unused keep-alive connections kept open per worker process
     # for the pool.
     #
-    keepalive 16;
+    keepalive 64;
 
     # Max number of requests per connection.
     #
-    keepalive_requests 256;
+    keepalive_requests 1000;
 
     # Max time of inactivity per connection.
     #
-    keepalive_timeout 60s;
+    keepalive_timeout 75s;
   }
 
   upstream ${AWS_BUCKET_PREFIX}-prolonged {
@@ -118,9 +118,9 @@ http {
     server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
     server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
 
-    keepalive 16;
-    keepalive_requests 256;
-    keepalive_timeout 60s;
+    keepalive 64;
+    keepalive_requests 1000;
+    keepalive_timeout 75s;
   }
 
   upstream ${AWS_BUCKET_PREFIX}-promoted {
@@ -135,9 +135,9 @@ http {
     server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
     server __S3_ENDPOINT_GENERIC_IPV4__:__S3_ENDPOINT_PORT__ max_fails=0 backup;
 
-    keepalive 16;
-    keepalive_requests 256;
-    keepalive_timeout 60s;
+    keepalive 64;
+    keepalive_requests 1000;
+    keepalive_timeout 75s;
   }
 
   # Do not store client request body before sending it via proxy_pass.
