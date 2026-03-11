@@ -65,7 +65,7 @@ image:
 
   ## tag specifies the version to deploy.
   ##
-  tag: a3e1ca4fea6bdd434a14b59d9c70c96016991e74
+  tag: 4.3.2
 
   ## pullPolicy specifies the image pull policy
   ##
