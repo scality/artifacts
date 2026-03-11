@@ -65,29 +65,40 @@ else
   return
 end
 
-local total_number_of_objects = 0
+local objects = {}
 for object in res.body:gmatch("([^\r\n]+)[\r\n]+") do
-  total_number_of_objects = total_number_of_objects + 1
+  table.insert(objects, object)
 end
+
+local total_number_of_objects = #objects
+local batch_size = 16
 local current_object = 0
-for object in res.body:gmatch("([^\r\n]+)[\r\n]+") do
-  local object_url, object_res
 
-  current_object = current_object + 1
-  ngx.say("[" .. current_object .. "/" .. total_number_of_objects .. "] Copying " .. object .. " ... ")
-  ngx.flush(true)
-
-  object_url = "/force_real_request/copy/" .. build_src .. "/" .. build_tgt .. "/" .. object
-  object_res = ngx.location.capture(object_url, { method = ngx.HTTP_PUT, body = '' })
-
-  if object_res.status == 200 then
-    ngx.say('DONE')
-    ngx.flush(true)
-  else
-    ngx.say('FAILED')
-    ngx.flush(true)
-    return
+for batch_start = 1, total_number_of_objects, batch_size do
+  local batch_end = math.min(batch_start + batch_size - 1, total_number_of_objects)
+  local urls = {}
+  for i = batch_start, batch_end do
+    table.insert(urls, {
+      "/force_real_request/copy/" .. build_src .. "/" .. build_tgt .. "/" .. objects[i],
+      { method = ngx.HTTP_PUT, body = '' }
+    })
   end
+
+  local results = { ngx.location.capture_multi(urls) }
+
+  for i, object_res in ipairs(results) do
+    current_object = current_object + 1
+    local object = objects[batch_start + i - 1]
+    ngx.say("[" .. current_object .. "/" .. total_number_of_objects .. "] " .. object .. " ... ")
+    if object_res.status == 200 then
+      ngx.say('DONE')
+    else
+      ngx.say('FAILED')
+      ngx.flush(true)
+      return
+    end
+  end
+  ngx.flush(true)
 end
 
 ngx.say("BUILD COPIED")

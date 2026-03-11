@@ -2,7 +2,7 @@
 
 import pytest
 
-from constants import STAGING_BUILD
+from constants import STAGING_BUILD, PROMOTED_BUILD
 
 
 COPY_BUILD = f'copy_of_{STAGING_BUILD}'
@@ -69,6 +69,34 @@ def test_copy_fails_when_target_already_exists(
     )
     assert lines[-2] == expected_check_line
     assert lines[-1] == b'FAILED'
+
+
+def test_copy_promotes_staging_to_promoted_bucket(
+    session, artifacts_url, upload_file, finish_build
+):
+    """Copy from a staging build to a promoted build (cross-bucket promotion).
+
+    Uses 19 objects to exercise the multi-batch loop (batch_size=16), and
+    embeds the index in each object's content to catch cross-object regressions.
+    """
+    n = 19
+    for i in range(n):
+        upload_file(STAGING_BUILD, f'obj-{i}', f'content-{i}'.encode())
+    finish_build(STAGING_BUILD)
+
+    resp = session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{PROMOTED_BUILD}/')
+    assert resp.status_code == 200
+    assert resp.content.splitlines()[-1] == b'BUILD COPIED'
+
+    # Verify every promoted object has the correct content.
+    for i in range(n):
+        dl = session.get(f'{artifacts_url}/download/{PROMOTED_BUILD}/obj-{i}')
+        assert dl.status_code == 200, f'obj-{i} not found in promoted build'
+        assert dl.content == f'content-{i}'.encode(), f'obj-{i} has unexpected content'
+
+    # Verify promotion metadata files are present.
+    assert session.get(f'{artifacts_url}/download/{PROMOTED_BUILD}/.final_status').status_code == 200
+    assert session.get(f'{artifacts_url}/download/{PROMOTED_BUILD}/.original_build').status_code == 200
 
 
 def test_copy_behind_ingress(session, artifacts_url, upload_file, finish_build):
