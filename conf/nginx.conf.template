@@ -261,6 +261,10 @@ http {
     if ($http_user_agent !~* "Mozilla") {
       set $builds_backend "/redirect/";
     }
+    # HEAD requests are metadata checks, not downloads: always proxy directly.
+    if ($request_method = "HEAD") {
+      set $builds_backend "/download/";
+    }
     rewrite ^/builds/([^/]+/.+[^/])$ $builds_backend$1 last;
     rewrite ^/builds/(.*)$ /download/$1 last;
 
