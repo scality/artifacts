@@ -1,6 +1,8 @@
-"""Tests that verify which S3 bucket each build type is stored in.
+"""Tests that verify which S3 bucket each build type is stored in, and that
+the /builds/ endpoint routes to the correct backend depending on User-Agent
+and HTTP method.
 
-Artifacts routes uploads to one of three buckets based on the build name:
+Bucket routing based on build name:
   *:staging-*   → artifacts-staging
   *:promoted-*  → artifacts-promoted
   anything else → artifacts-prolonged
@@ -8,6 +10,11 @@ Artifacts routes uploads to one of three buckets based on the build name:
 Uploads via the artifacts API only accept staging build names (nginx regex
 enforces this).  For promoted/prolonged builds we insert objects directly via
 the S3 client and verify the artifacts download API can still retrieve them.
+
+/builds/ backend routing:
+  GET  + non-Mozilla UA  → /redirect/ → 302 presigned S3 URL
+  GET  + Mozilla UA      → /download/ → 200 proxied
+  HEAD + any UA          → /download/ → 200 proxied (HEAD is always direct)
 """
 
 import pytest
@@ -65,6 +72,39 @@ def test_prolonged_build_downloadable_from_prolonged_bucket(
     )
     assert resp.status_code == 200
     assert resp.content == b'notes'
+
+
+def test_builds_cli_ua_redirects_to_presigned_url(upload_file, session, artifacts_url):
+    """GET /builds/ with a non-Mozilla UA is rewritten to /redirect/ → 302."""
+    upload_file(STAGING_BUILD, 'file.txt')
+    resp = session.get(
+        f'{artifacts_url}/builds/{STAGING_BUILD}/file.txt',
+        headers={'User-Agent': 'curl/7.83.1'},
+        allow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+
+def test_builds_browser_ua_proxied_directly(upload_file, session, artifacts_url):
+    """GET /builds/ with a Mozilla UA is rewritten to /download/ → 200 proxied."""
+    upload_file(STAGING_BUILD, 'file.txt')
+    resp = session.get(
+        f'{artifacts_url}/builds/{STAGING_BUILD}/file.txt',
+        headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)'},
+        allow_redirects=False,
+    )
+    assert resp.status_code == 200
+
+
+def test_builds_head_always_proxied_regardless_of_ua(upload_file, session, artifacts_url):
+    """HEAD /builds/ with a non-Mozilla UA is still rewritten to /download/ → 200."""
+    upload_file(STAGING_BUILD, 'file.txt')
+    resp = session.head(
+        f'{artifacts_url}/builds/{STAGING_BUILD}/file.txt',
+        headers={'User-Agent': 'curl/7.83.1'},
+        allow_redirects=False,
+    )
+    assert resp.status_code == 200
 
 
 def test_staging_build_not_visible_from_promoted_bucket(
