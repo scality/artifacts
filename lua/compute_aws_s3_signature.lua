@@ -243,7 +243,7 @@ elseif signature_mode == "PRESIGN" then
 
   -- Set presignature expiration
   --
-  expires = ngx.time() + 60
+  expires = ngx.time() + 3600
 
   -- Compute presignature.
   --
