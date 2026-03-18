@@ -81,16 +81,24 @@ local function empty_if_nil (str)
 end
 
 
--- Compute AWS S3 signature.
+-- Compute AWS S3 signature with an explicit canonicalized resource.
+-- Used by multipart modes that need to append subresource query params.
 --
-local function compute_S3_signature (canonicalized_amz_headers)
-  local canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key
+local function compute_S3_signature_with_resource (canonicalized_amz_headers, canonicalized_resource)
   local aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
   local http_content_md5 = empty_if_nil(ngx.var.http_content_md5)
   local http_content_type = empty_if_nil(ngx.var.http_content_type)
   local http_date = empty_if_nil(ngx.var.http_date)
   local string_to_sign = ngx.var.request_method .. "\n" .. http_content_md5 .. "\n" .. http_content_type .. "\n" .. http_date .. "\n" .. canonicalized_amz_headers .. "\n" .. canonicalized_resource
   ngx.var.aws_signature = ngx.encode_base64(ngx.hmac_sha1(aws_secret_key, string_to_sign))
+end
+
+
+-- Compute AWS S3 signature.
+--
+local function compute_S3_signature (canonicalized_amz_headers)
+  local canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key
+  compute_S3_signature_with_resource(canonicalized_amz_headers, canonicalized_resource)
 end
 
 
@@ -252,6 +260,68 @@ elseif signature_mode == "PRESIGN" then
   -- Redirect directly from here.
   --
   return ngx.redirect(ngx.var.redirect_endpoint .. "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?" .. ngx.var.presign_query_string, ngx.HTTP_MOVED_TEMPORARILY);
+
+elseif signature_mode == "MULTIPART_INITIATE" then
+
+  -- MULTIPART_INITIATE: POST /{key}?uploads
+  -- Initiates a multipart upload; S3 returns an uploadId.
+  --
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path)
+  if ngx.var.aws_tgt_bucket == "" then
+    ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+  end
+  ngx.var.x_amz_acl = "private"
+  compute_S3_signature_with_resource(
+    "x-amz-acl:" .. ngx.var.x_amz_acl .. "\nx-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploads"
+  )
+
+elseif signature_mode == "MULTIPART_UPLOAD_PART" then
+
+  -- MULTIPART_UPLOAD_PART: PUT /{key}?partNumber=N&uploadId=X
+  -- Uploads one chunk; S3 returns an ETag for the part.
+  -- partNumber < uploadId alphabetically → correct V2 sort order.
+  --
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path)
+  if ngx.var.aws_tgt_bucket == "" then
+    ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+  end
+  local part_number = ngx.var.arg_partNumber or ""
+  local upload_id   = ngx.var.arg_uploadId   or ""
+  compute_S3_signature_with_resource(
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?partNumber=" .. part_number .. "&uploadId=" .. upload_id
+  )
+
+elseif signature_mode == "MULTIPART_COMPLETE" then
+
+  -- MULTIPART_COMPLETE: POST /{key}?uploadId=X
+  -- Sends XML body with part ETags; S3 assembles the final object.
+  --
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path)
+  if ngx.var.aws_tgt_bucket == "" then
+    ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+  end
+  local upload_id = ngx.var.arg_uploadId or ""
+  compute_S3_signature_with_resource(
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
+  )
+
+elseif signature_mode == "MULTIPART_ABORT" then
+
+  -- MULTIPART_ABORT: DELETE /{key}?uploadId=X
+  -- Cancels an in-progress multipart upload and frees stored parts.
+  --
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path)
+  if ngx.var.aws_tgt_bucket == "" then
+    ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+  end
+  local upload_id = ngx.var.arg_uploadId or ""
+  compute_S3_signature_with_resource(
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
+  )
 
 else
 

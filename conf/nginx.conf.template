@@ -764,6 +764,184 @@ http {
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
     }
 
+    # Multipart upload: initiate.
+    # POST /upload-multipart/initiate/<build>/<path>
+    # Proxies POST /<key>?uploads to S3; returns XML with uploadId.
+    #
+    location ~ ^/upload-multipart/initiate/([^/]+/.*[^/])$ {
+      if ($request_method != POST) {
+        return 400;
+      }
+
+      set_by_lua_block $canonical_path {
+        local tmp = ngx.var.request_uri
+        tmp = tmp:gsub('?.*$', '', 1)
+        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
+        tmp = tmp:gsub('+', '%%2B')
+        tmp = tmp:gsub('&amp;', '%%26')
+        tmp = ngx.unescape_uri(tmp)
+        return tmp
+      }
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
+        return 400;
+      }
+
+      set $signature_mode "MULTIPART_INITIATE";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $x_amz_acl      "";
+      set $aws_tgt_bucket "${AWS_BUCKET_PREFIX}-staging";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header x-amz-acl     $x_amz_acl;
+      proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection    "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploads;
+    }
+
+    # Multipart upload: upload one part.
+    # PUT /upload-multipart/part/<build>/<path>?partNumber=N&uploadId=X
+    # Proxies PUT /<key>?partNumber=N&uploadId=X to S3; returns ETag header.
+    #
+    location ~ ^/upload-multipart/part/([^/]+/.*[^/])$ {
+      if ($request_method != PUT) {
+        return 400;
+      }
+
+      set_by_lua_block $canonical_path {
+        local tmp = ngx.var.request_uri
+        tmp = tmp:gsub('?.*$', '', 1)
+        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
+        tmp = tmp:gsub('+', '%%2B')
+        tmp = tmp:gsub('&amp;', '%%26')
+        tmp = ngx.unescape_uri(tmp)
+        return tmp
+      }
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
+        return 400;
+      }
+
+      set $signature_mode "MULTIPART_UPLOAD_PART";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $x_amz_acl      "";
+      set $aws_tgt_bucket "${AWS_BUCKET_PREFIX}-staging";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection    "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?partNumber=$arg_partNumber&uploadId=$arg_uploadId;
+    }
+
+    # Multipart upload: complete.
+    # POST /upload-multipart/complete/<build>/<path>?uploadId=X
+    # Proxies POST /<key>?uploadId=X with XML body (part ETags) to S3.
+    #
+    location ~ ^/upload-multipart/complete/([^/]+/.*[^/])$ {
+      if ($request_method != POST) {
+        return 400;
+      }
+
+      set_by_lua_block $canonical_path {
+        local tmp = ngx.var.request_uri
+        tmp = tmp:gsub('?.*$', '', 1)
+        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
+        tmp = tmp:gsub('+', '%%2B')
+        tmp = tmp:gsub('&amp;', '%%26')
+        tmp = ngx.unescape_uri(tmp)
+        return tmp
+      }
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
+        return 400;
+      }
+
+      set $signature_mode "MULTIPART_COMPLETE";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $x_amz_acl      "";
+      set $aws_tgt_bucket "${AWS_BUCKET_PREFIX}-staging";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization  "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date     $x_amz_date;
+      proxy_set_header Host           $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection     "keep-alive";
+      proxy_set_header Content-Type   "application/xml";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploadId=$arg_uploadId;
+    }
+
+    # Multipart upload: abort.
+    # DELETE /upload-multipart/abort/<build>/<path>?uploadId=X
+    # Cancels an in-progress multipart upload and frees stored parts.
+    #
+    location ~ ^/upload-multipart/abort/([^/]+/.*[^/])$ {
+      if ($request_method != DELETE) {
+        return 400;
+      }
+
+      set_by_lua_block $canonical_path {
+        local tmp = ngx.var.request_uri
+        tmp = tmp:gsub('?.*$', '', 1)
+        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
+        tmp = tmp:gsub('+', '%%2B')
+        tmp = tmp:gsub('&amp;', '%%26')
+        tmp = ngx.unescape_uri(tmp)
+        return tmp
+      }
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
+        return 400;
+      }
+
+      set $signature_mode "MULTIPART_ABORT";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $x_amz_acl      "";
+      set $aws_tgt_bucket "${AWS_BUCKET_PREFIX}-staging";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection    "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploadId=$arg_uploadId;
+    }
+
     # Add metadata for a build with the following syntax:
     #
     # /github/scality/$(repo)/$(workflow_name)/$(created_at)/$(artifacts_name)?key1=value1&key1=value2&key2=value3
