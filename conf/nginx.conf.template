@@ -159,6 +159,19 @@ http {
   #
   include /etc/nginx/mimetypes.map;
 
+  # Determine the backend for /builds/ rewrites.
+  # CLI clients (no "Mozilla" in User-Agent) are redirected to a presigned S3
+  # URL (/redirect/). Browser clients and HEAD requests always proxy through
+  # nginx (/download/).
+  # The map key combines method and User-Agent so HEAD takes priority over the
+  # UA check (first matching regex wins).
+  #
+  map "$request_method:$http_user_agent" $builds_backend {
+      ~^HEAD:       /download/;   # HEAD wins regardless of UA
+      ~*:.*mozilla  /download/;   # Browser UA → proxy through nginx
+      default       /redirect/;   # CLI client → presigned S3 redirect
+  }
+
   server {
     # Use plain HTTP, as we are on a private network.
     #
@@ -251,7 +264,14 @@ http {
 
     # Handle "/builds/" location to keep backward compatibility with the
     # previous artifacts implementations.
+    # CLI clients (curl, wget, aria2c — no "Mozilla" in User-Agent) fetching
+    # a file are internally rewritten to /redirect/ so they receive a presigned
+    # URL and download directly from S3. Browser clients keep the original
+    # proxied-through-nginx behaviour (/download/).
+    # Directory listings (trailing slash) always go to /download/.
+    # $builds_backend is set by the map directive in the http block above.
     #
+    rewrite ^/builds/([^/]+/.+[^/])$ $builds_backend$1 last;
     rewrite ^/builds/(.*)$ /download/$1 last;
 
     # Handle subdir listing under "/redirect/"
