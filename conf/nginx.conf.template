@@ -251,7 +251,21 @@ http {
 
     # Handle "/builds/" location to keep backward compatibility with the
     # previous artifacts implementations.
+    # CLI clients (curl, wget, aria2c — no "Mozilla" in User-Agent) fetching
+    # a file are internally rewritten to /redirect/ so they receive a presigned
+    # URL and download directly from S3. Browser clients keep the original
+    # proxied-through-nginx behaviour (/download/).
+    # Directory listings (trailing slash) always go to /download/.
     #
+    set $builds_backend "/download/";
+    if ($http_user_agent !~* "Mozilla") {
+      set $builds_backend "/redirect/";
+    }
+    # HEAD requests are metadata checks, not downloads: always proxy directly.
+    if ($request_method = "HEAD") {
+      set $builds_backend "/download/";
+    }
+    rewrite ^/builds/([^/]+/.+[^/])$ $builds_backend$1 last;
     rewrite ^/builds/(.*)$ /download/$1 last;
 
     # Handle subdir listing under "/redirect/"
