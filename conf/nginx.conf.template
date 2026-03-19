@@ -764,6 +764,63 @@ http {
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key;
     }
 
+    # Return a presigned S3 PUT URL for a single-file upload.
+    # GET /presign-upload/<build>/<path>
+    # Responds 200 with the presigned URL as plain text so the client can PUT
+    # the file body directly to S3, bypassing this proxy entirely.
+    #
+    location ~ ^/presign-upload/([^/]+/.*[^/])$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
+        return 400;
+      }
+
+      set $signature_mode    "PRESIGN_PUT";
+      set $redirect_endpoint "__S3_ENDPOINT_PROTO____S3_ENDPOINT_HOST__:__S3_ENDPOINT_PORT__";
+      set $aws_access_key    "";
+      set $aws_tgt_bucket    "";
+      set $encoded_key       "";
+      set $presign_query_string "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+    }
+
+    # Return a presigned S3 PUT URL for one multipart part.
+    # GET /presign-upload-part/<build>/<path>?partNumber=N&uploadId=X
+    # Responds 200 with the presigned URL as plain text.
+    #
+    location ~ ^/presign-upload-part/([^/]+/.*[^/])$ {
+      if ($request_method != GET) {
+        return 400;
+      }
+
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      if ($canonical_path !~ '^([^/]+\:staging\-([0-9]{10}\.|)[0-9a-f]+\.[^./]+\.[0-9]+(\.[0-9]+|)|\.md_staging)/') {
+        return 400;
+      }
+
+      set $signature_mode    "PRESIGN_PART";
+      set $redirect_endpoint "__S3_ENDPOINT_PROTO____S3_ENDPOINT_HOST__:__S3_ENDPOINT_PORT__";
+      set $aws_access_key    "";
+      set $aws_tgt_bucket    "";
+      set $encoded_key       "";
+      set $presign_query_string "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+    }
+
     # Multipart upload: initiate.
     # POST /upload-multipart/initiate/<build>/<path>
     # Proxies POST /<key>?uploads to S3; returns XML with uploadId.
