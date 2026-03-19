@@ -86,14 +86,19 @@ def test_builds_cli_ua_redirects_to_presigned_url(upload_file, session, artifact
 
 
 def test_builds_browser_ua_proxied_directly(upload_file, session, artifacts_url):
-    """GET /builds/ with a Mozilla UA is rewritten to /download/ → 200 proxied."""
-    upload_file(STAGING_BUILD, 'file.txt')
+    """GET /builds/ with a Mozilla UA is rewritten to /download/ → 200 proxied.
+
+    The response body must be the file content, not an HTML directory listing.
+    """
+    data = b'browser-proxied content'
+    upload_file(STAGING_BUILD, 'file.txt', data=data)
     resp = session.get(
         f'{artifacts_url}/builds/{STAGING_BUILD}/file.txt',
         headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64)'},
         allow_redirects=False,
     )
     assert resp.status_code == 200
+    assert resp.content == data
 
 
 def test_builds_head_always_proxied_regardless_of_ua(upload_file, session, artifacts_url):
