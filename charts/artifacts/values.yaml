@@ -61,7 +61,9 @@ image:
 
   ## repository on the registry to pull from.
   ##
-  repository: scality/artifacts
+  repository: scality/artifacts/artifacts
+
+   ## tag specifies the version to deploy.
 
   ## tag specifies the version to deploy.
   ##
