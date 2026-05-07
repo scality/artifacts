@@ -926,7 +926,6 @@ http {
       proxy_set_header x-amz-date     $x_amz_date;
       proxy_set_header Host           $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
       proxy_set_header Connection     "keep-alive";
-      proxy_set_header Content-Type   "application/xml";
 
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploadId=$arg_uploadId;
     }
