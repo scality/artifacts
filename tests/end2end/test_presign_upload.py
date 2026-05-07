@@ -8,42 +8,11 @@ file body (or part body) directly to S3 without going through nginx.
 """
 
 import hashlib
-import re
 
 import requests
 
 from constants import STAGING_BUILD, PROMOTED_BUILD
-
-
-# ---------------------------------------------------------------------------
-# Helpers shared with multipart flow
-# ---------------------------------------------------------------------------
-
-def _initiate(session, artifacts_url, build, path):
-    resp = session.post(
-        f'{artifacts_url}/upload-multipart/initiate/{build}/{path}',
-        headers={'Content-Length': '0'},
-    )
-    assert resp.status_code == 200, f'initiate failed: {resp.status_code} {resp.text}'
-    match = re.search(r'<UploadId>([^<]+)</UploadId>', resp.text)
-    assert match, f'No UploadId in response: {resp.text}'
-    return match.group(1)
-
-
-def _complete(session, artifacts_url, build, path, upload_id, parts):
-    xml_parts = ''.join(
-        f'<Part><PartNumber>{pn}</PartNumber><ETag>{etag}</ETag></Part>'
-        for pn, etag in sorted(parts)
-    )
-    xml_body = f'<CompleteMultipartUpload>{xml_parts}</CompleteMultipartUpload>'
-    resp = session.post(
-        f'{artifacts_url}/upload-multipart/complete/{build}/{path}',
-        params={'uploadId': upload_id},
-        data=xml_body.encode(),
-        headers={'Content-Type': 'application/xml'},
-    )
-    assert resp.status_code == 200, f'complete failed: {resp.status_code} {resp.text}'
-    return resp
+from multipart_helpers import multipart_complete, multipart_initiate
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +76,7 @@ def test_presign_upload_rejects_non_staging_build(session, artifacts_url):
 
 def test_presign_upload_part_returns_url(session, artifacts_url):
     """GET /presign-upload-part/ with partNumber+uploadId returns a URL."""
-    upload_id = _initiate(session, artifacts_url, STAGING_BUILD, 'presign/part-url.bin')
+    upload_id = multipart_initiate(session, artifacts_url, STAGING_BUILD, 'presign/part-url.bin')
     try:
         resp = session.get(
             f'{artifacts_url}/presign-upload-part/{STAGING_BUILD}/presign/part-url.bin',
@@ -131,7 +100,7 @@ def test_presign_multipart_full_round_trip(session, artifacts_url):
     part2 = b'B' * (1 * 1024 * 1024)   # 1 MB  (last part, may be smaller)
 
     # 1. Initiate through nginx
-    upload_id = _initiate(session, artifacts_url, build, path)
+    upload_id = multipart_initiate(session, artifacts_url, build, path)
 
     etags = []
     try:
@@ -164,7 +133,7 @@ def test_presign_multipart_full_round_trip(session, artifacts_url):
         raise
 
     # 4. Complete through nginx
-    _complete(session, artifacts_url, build, path, upload_id, etags)
+    multipart_complete(session, artifacts_url, build, path, upload_id, etags)
 
     # 5. Verify the assembled object
     dl = session.get(

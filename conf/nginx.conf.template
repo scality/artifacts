@@ -830,15 +830,7 @@ http {
         return 400;
       }
 
-      set_by_lua_block $canonical_path {
-        local tmp = ngx.var.request_uri
-        tmp = tmp:gsub('?.*$', '', 1)
-        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
-        tmp = tmp:gsub('+', '%%2B')
-        tmp = tmp:gsub('&amp;', '%%26')
-        tmp = ngx.unescape_uri(tmp)
-        return tmp
-      }
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_multipart_path.ljbc;
 
       if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
         return 400;
@@ -875,15 +867,7 @@ http {
         return 400;
       }
 
-      set_by_lua_block $canonical_path {
-        local tmp = ngx.var.request_uri
-        tmp = tmp:gsub('?.*$', '', 1)
-        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
-        tmp = tmp:gsub('+', '%%2B')
-        tmp = tmp:gsub('&amp;', '%%26')
-        tmp = ngx.unescape_uri(tmp)
-        return tmp
-      }
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_multipart_path.ljbc;
 
       if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
         return 400;
@@ -919,15 +903,7 @@ http {
         return 400;
       }
 
-      set_by_lua_block $canonical_path {
-        local tmp = ngx.var.request_uri
-        tmp = tmp:gsub('?.*$', '', 1)
-        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
-        tmp = tmp:gsub('+', '%%2B')
-        tmp = tmp:gsub('&amp;', '%%26')
-        tmp = ngx.unescape_uri(tmp)
-        return tmp
-      }
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_multipart_path.ljbc;
 
       if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
         return 400;
@@ -964,15 +940,7 @@ http {
         return 400;
       }
 
-      set_by_lua_block $canonical_path {
-        local tmp = ngx.var.request_uri
-        tmp = tmp:gsub('?.*$', '', 1)
-        tmp = tmp:gsub('^/[^/]+/[^/]+/', '', 1)
-        tmp = tmp:gsub('+', '%%2B')
-        tmp = tmp:gsub('&amp;', '%%26')
-        tmp = ngx.unescape_uri(tmp)
-        return tmp
-      }
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_multipart_path.ljbc;
 
       if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
         return 400;

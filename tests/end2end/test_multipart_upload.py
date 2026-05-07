@@ -1,24 +1,9 @@
 """Tests for the multipart upload endpoints."""
 
 import hashlib
-import re
-import xml.etree.ElementTree as ET
-
-import pytest
 
 from constants import STAGING_BUILD
-
-
-def _initiate(session, artifacts_url, build, path):
-    """POST /upload-multipart/initiate/{build}/{path} → uploadId."""
-    resp = session.post(
-        f'{artifacts_url}/upload-multipart/initiate/{build}/{path}',
-        headers={'Content-Length': '0'},
-    )
-    assert resp.status_code == 200, f'initiate failed: {resp.status_code} {resp.text}'
-    match = re.search(r'<UploadId>([^<]+)</UploadId>', resp.text)
-    assert match, f'No UploadId in initiate response: {resp.text}'
-    return match.group(1)
+from multipart_helpers import multipart_complete, multipart_initiate
 
 
 def _upload_part(session, artifacts_url, build, path, upload_id, part_number, data):
@@ -33,23 +18,6 @@ def _upload_part(session, artifacts_url, build, path, upload_id, part_number, da
     etag = resp.headers.get('ETag', '')
     assert etag, f'No ETag returned for part {part_number}'
     return etag
-
-
-def _complete(session, artifacts_url, build, path, upload_id, parts):
-    """POST /upload-multipart/complete/{build}/{path}?uploadId=X with XML body."""
-    xml_parts = ''.join(
-        f'<Part><PartNumber>{pn}</PartNumber><ETag>{etag}</ETag></Part>'
-        for pn, etag in sorted(parts)
-    )
-    xml_body = f'<CompleteMultipartUpload>{xml_parts}</CompleteMultipartUpload>'
-    resp = session.post(
-        f'{artifacts_url}/upload-multipart/complete/{build}/{path}',
-        params={'uploadId': upload_id},
-        data=xml_body.encode(),
-        headers={'Content-Type': 'application/xml'},
-    )
-    assert resp.status_code == 200, f'complete failed: {resp.status_code} {resp.text}'
-    return resp
 
 
 def _abort(session, artifacts_url, build, path, upload_id):
@@ -70,9 +38,9 @@ def test_multipart_upload_single_part(session, artifacts_url):
     path = 'multipart/single.bin'
     data = b'hello multipart world'
 
-    upload_id = _initiate(session, artifacts_url, build, path)
+    upload_id = multipart_initiate(session, artifacts_url, build, path)
     etag = _upload_part(session, artifacts_url, build, path, upload_id, 1, data)
-    _complete(session, artifacts_url, build, path, upload_id, [(1, etag)])
+    multipart_complete(session, artifacts_url, build, path, upload_id, [(1, etag)])
 
     dl = session.get(
         f'{artifacts_url}/download/{build}/{path}',
@@ -89,10 +57,10 @@ def test_multipart_upload_multiple_parts(session, artifacts_url):
     part1 = b'A' * (6 * 1024 * 1024)  # 6 MB (S3 minimum part size)
     part2 = b'B' * (1 * 1024 * 1024)  # 1 MB last part
 
-    upload_id = _initiate(session, artifacts_url, build, path)
+    upload_id = multipart_initiate(session, artifacts_url, build, path)
     etag1 = _upload_part(session, artifacts_url, build, path, upload_id, 1, part1)
     etag2 = _upload_part(session, artifacts_url, build, path, upload_id, 2, part2)
-    _complete(session, artifacts_url, build, path, upload_id, [(1, etag1), (2, etag2)])
+    multipart_complete(session, artifacts_url, build, path, upload_id, [(1, etag1), (2, etag2)])
 
     dl = session.get(
         f'{artifacts_url}/download/{build}/{path}',
@@ -110,7 +78,7 @@ def test_multipart_upload_abort(session, artifacts_url):
     path = 'multipart/aborted.bin'
     data = b'this should never land'
 
-    upload_id = _initiate(session, artifacts_url, build, path)
+    upload_id = multipart_initiate(session, artifacts_url, build, path)
     _upload_part(session, artifacts_url, build, path, upload_id, 1, data)
 
     abort_resp = _abort(session, artifacts_url, build, path, upload_id)
@@ -140,12 +108,12 @@ def test_multipart_upload_parts_out_of_order(session, artifacts_url):
     part1 = b'A' * (6 * 1024 * 1024)
     part2 = b'B' * (1 * 1024 * 1024)  # last part may be smaller
 
-    upload_id = _initiate(session, artifacts_url, build, path)
+    upload_id = multipart_initiate(session, artifacts_url, build, path)
     # Upload part 2 before part 1 intentionally
     etag2 = _upload_part(session, artifacts_url, build, path, upload_id, 2, part2)
     etag1 = _upload_part(session, artifacts_url, build, path, upload_id, 1, part1)
     # Complete with parts in correct numerical order in the XML
-    _complete(session, artifacts_url, build, path, upload_id, [(1, etag1), (2, etag2)])
+    multipart_complete(session, artifacts_url, build, path, upload_id, [(1, etag1), (2, etag2)])
 
     dl = session.get(
         f'{artifacts_url}/download/{build}/{path}',
