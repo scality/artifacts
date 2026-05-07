@@ -286,8 +286,11 @@ elseif signature_mode == "MULTIPART_UPLOAD_PART" then
   if ngx.var.aws_tgt_bucket == "" then
     ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
   end
-  local part_number = ngx.var.arg_partNumber or ""
-  local upload_id   = ngx.var.arg_uploadId   or ""
+  local part_number = ngx.var.arg_partNumber
+  local upload_id   = ngx.var.arg_uploadId
+  if not part_number or part_number == "" or not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
   compute_S3_signature_with_resource(
     "x-amz-date:" .. ngx.var.x_amz_date,
     "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?partNumber=" .. part_number .. "&uploadId=" .. upload_id
@@ -302,7 +305,10 @@ elseif signature_mode == "MULTIPART_COMPLETE" then
   if ngx.var.aws_tgt_bucket == "" then
     ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
   end
-  local upload_id = ngx.var.arg_uploadId or ""
+  local upload_id = ngx.var.arg_uploadId
+  if not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
   compute_S3_signature_with_resource(
     "x-amz-date:" .. ngx.var.x_amz_date,
     "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
@@ -317,7 +323,10 @@ elseif signature_mode == "MULTIPART_ABORT" then
   if ngx.var.aws_tgt_bucket == "" then
     ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
   end
-  local upload_id = ngx.var.arg_uploadId or ""
+  local upload_id = ngx.var.arg_uploadId
+  if not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
   compute_S3_signature_with_resource(
     "x-amz-date:" .. ngx.var.x_amz_date,
     "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
@@ -357,8 +366,11 @@ elseif signature_mode == "PRESIGN_PART" then
     ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
   end
 
-  local part_number = ngx.var.arg_partNumber or ""
-  local upload_id   = ngx.var.arg_uploadId   or ""
+  local part_number = ngx.var.arg_partNumber
+  local upload_id   = ngx.var.arg_uploadId
+  if not part_number or part_number == "" or not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
   local expires     = ngx.time() + 3600
   local aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
   -- subresources must appear in canonical resource (alphabetical: partNumber < uploadId)
