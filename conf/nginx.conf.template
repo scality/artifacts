@@ -854,6 +854,8 @@ http {
       proxy_set_header x-amz-acl     $x_amz_acl;
       proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
       proxy_set_header Connection    "keep-alive";
+      proxy_set_header Cache-Control "no-cache";
+      proxy_set_header Cache-Control "no-store";
 
       proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploads;
     }
