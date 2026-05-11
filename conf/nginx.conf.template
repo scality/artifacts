@@ -271,7 +271,9 @@ http {
     # Directory listings (trailing slash) always go to /download/.
     # $builds_backend is set by the map directive in the http block above.
     #
-    rewrite ^/builds/([^/]+/.+[^/])$ $builds_backend$1 last;
+    if ($builds_backend = /redirect/) {
+        rewrite ^/builds/([^/]+/.+[^/])$ /redirect/$1 last;
+    }
     rewrite ^/builds/(.*)$ /download/$1 last;
 
     # Handle subdir listing under "/redirect/"
