@@ -31,6 +31,7 @@ COPY include/browse_footer.html /etc/nginx/browse_footer.html
 
 # Install and optimize lua scripts
 COPY lua/canonicalize_path.lua /etc/nginx/canonicalize_path.lua
+COPY lua/canonicalize_multipart_path.lua /etc/nginx/canonicalize_multipart_path.lua
 COPY lua/compute_aws_s3_signature.lua /etc/nginx/compute_aws_s3_signature.lua
 COPY lua/find_build.lua /etc/nginx/find_build.lua
 COPY lua/copy_build.lua /etc/nginx/copy_build.lua
@@ -41,6 +42,7 @@ COPY lua/browse.lua /etc/nginx/browse.lua
 COPY lua/github_access.lua /etc/nginx/github_access.lua
 
 RUN /usr/local/openresty/luajit/bin/luajit -b /etc/nginx/canonicalize_path.lua /etc/nginx/canonicalize_path.ljbc
+RUN /usr/local/openresty/luajit/bin/luajit -b /etc/nginx/canonicalize_multipart_path.lua /etc/nginx/canonicalize_multipart_path.ljbc
 RUN /usr/local/openresty/luajit/bin/luajit -b /etc/nginx/compute_aws_s3_signature.lua /etc/nginx/compute_aws_s3_signature.ljbc
 RUN /usr/local/openresty/luajit/bin/luajit -b /etc/nginx/find_build.lua /etc/nginx/find_build.ljbc
 RUN /usr/local/openresty/luajit/bin/luajit -b /etc/nginx/copy_build.lua /etc/nginx/copy_build.ljbc
