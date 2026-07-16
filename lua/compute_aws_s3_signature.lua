@@ -373,14 +373,19 @@ elseif signature_mode == "PRESIGN_PART" then
   end
   local expires     = ngx.time() + 3600
   local aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+  -- GCS V2 requires URL-encoded values in the canonical resource (unlike AWS V2 which uses raw values).
+  -- See: https://cloud.google.com/storage/docs/access-control/signed-urls-v2
+  -- ngx.var.arg_* may return a raw (already percent-encoded) or decoded value depending on the nginx
+  -- version. Normalize by unescaping first, then re-escaping to avoid double-encoding (%2B → %252B).
+  local escaped_upload_id = ngx.escape_uri(ngx.unescape_uri(upload_id))
   -- subresources must appear in canonical resource (alphabetical: partNumber < uploadId)
   local canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key ..
-    "?partNumber=" .. part_number .. "&uploadId=" .. upload_id
+    "?partNumber=" .. part_number .. "&uploadId=" .. escaped_upload_id
   local string_to_sign = "PUT\n\n\n" .. expires .. "\n" .. canonicalized_resource
   local aws_signature = ngx.encode_base64(ngx.hmac_sha1(aws_secret_key, string_to_sign))
   local presigned_url = ngx.var.redirect_endpoint .. "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key ..
     "?partNumber=" .. part_number ..
-    "&uploadId=" .. ngx.escape_uri(upload_id) ..
+    "&uploadId=" .. escaped_upload_id ..
     "&AWSAccessKeyId=" .. ngx.escape_uri(ngx.var.aws_access_key) ..
     "&Expires=" .. expires ..
     "&Signature=" .. ngx.escape_uri(aws_signature)

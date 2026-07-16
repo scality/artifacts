@@ -92,6 +92,26 @@ def test_presign_upload_part_returns_url(session, artifacts_url):
         )
 
 
+def test_presign_upload_part_encodes_special_chars_in_upload_id(session, artifacts_url):
+    """uploadId containing +, / and = (GCS-style base64) is percent-encoded in the presigned URL."""
+    # Use a synthetic uploadId with base64 special characters. The PRESIGN_PART
+    # endpoint does not validate that the uploadId corresponds to a real upload,
+    # so we can inject one directly to verify the encoding behaviour without
+    # needing a backend that generates such IDs.
+    special_upload_id = 'abc+def/ghi=jkl'
+    resp = session.get(
+        f'{artifacts_url}/presign-upload-part/{STAGING_BUILD}/presign/encoding-test.bin',
+        params={'partNumber': 1, 'uploadId': special_upload_id},
+    )
+    assert resp.status_code == 200, f'{resp.status_code} {resp.text}'
+    url = resp.text.strip()
+    # The uploadId must appear percent-encoded in the presigned URL so that GCS
+    # can reconstruct the canonical resource from the URL literally (GCS V2 spec).
+    assert 'uploadId=abc%2Bdef%2Fghi%3Djkl' in url, (
+        f'Expected uploadId to be percent-encoded in presigned URL, got: {url!r}'
+    )
+
+
 def test_presign_multipart_full_round_trip(session, artifacts_url):
     """Initiate via nginx, upload parts directly to S3, complete via nginx."""
     build = STAGING_BUILD
