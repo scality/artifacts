@@ -382,9 +382,17 @@ elseif signature_mode == "PRESIGN_PART" then
   -- Normalise uploadId: ngx.var.arg_* may be pre-encoded or raw depending on the nginx
   -- version; unescape then re-escape to avoid double-encoding (%2B → %252B).
   local escaped_upload_id = ngx.escape_uri(ngx.unescape_uri(upload_id))
-  -- GCS does NOT include ?partNumber=N&uploadId=X in the canonical resource
-  -- for presigned part PUTs (unlike standard AWS S3 V2 spec).
-  local canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. url_safe_key
+  -- GCS does NOT include ?partNumber=N&uploadId=X in the canonical resource for presigned
+  -- part PUTs. Standard AWS S3-compatible backends (cloudserver, Scaleway S3) do include
+  -- them per the V2 spec. Detect GCS from ENDPOINT_URL to pick the right behaviour.
+  local endpoint_url = os.getenv('ENDPOINT_URL') or ''
+  local canonicalized_resource
+  if endpoint_url:find('googleapis', 1, true) then
+    canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. url_safe_key
+  else
+    canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. url_safe_key ..
+      "?partNumber=" .. part_number .. "&uploadId=" .. escaped_upload_id
+  end
   local string_to_sign = "PUT\n\n\n" .. expires .. "\n" .. canonicalized_resource
   local aws_signature = ngx.encode_base64(ngx.hmac_sha1(aws_secret_key, string_to_sign))
   local presigned_url = ngx.var.redirect_endpoint .. "/" .. ngx.var.aws_tgt_bucket .. "/" .. url_safe_key ..
