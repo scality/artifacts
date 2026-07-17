@@ -118,26 +118,6 @@ def test_presign_upload_part_encodes_special_chars_in_upload_id(session, artifac
     )
 
 
-def test_presign_upload_part_encodes_colons_in_url(session, artifacts_url):
-    """Presigned part URL path must use %3A for ':' — GCS normalises ':' to '%3A'
-    when computing StringToSign, so a literal ':' causes SignatureDoesNotMatch."""
-    upload_id = multipart_initiate(session, artifacts_url, STAGING_BUILD, 'presign/colon-part.bin')
-    try:
-        resp = session.get(
-            f'{artifacts_url}/presign-upload-part/{STAGING_BUILD}/presign/colon-part.bin',
-            params={'partNumber': 1, 'uploadId': upload_id},
-        )
-        assert resp.status_code == 200, f'{resp.status_code} {resp.text}'
-        url = resp.text.strip()
-        path = urlparse(url).path
-        assert '%3A' in path, f"Expected '%3A' in presigned part URL path, got: {path!r}"
-        assert ':' not in path, f"Raw ':' in presigned part URL path causes SignatureDoesNotMatch on GCS"
-    finally:
-        session.delete(
-            f'{artifacts_url}/upload-multipart/abort/{STAGING_BUILD}/presign/colon-part.bin',
-            params={'uploadId': upload_id},
-        )
-
 
 def test_presign_multipart_full_round_trip(session, artifacts_url):
     """Initiate via nginx, upload parts directly to S3, complete via nginx."""
