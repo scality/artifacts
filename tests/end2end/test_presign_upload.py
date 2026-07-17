@@ -8,6 +8,7 @@ file body (or part body) directly to S3 without going through nginx.
 """
 
 import hashlib
+from urllib.parse import urlparse
 
 import requests
 
@@ -55,6 +56,17 @@ def test_presign_upload_file_reachable_after_direct_put(session, artifacts_url):
     assert dl.content == data
 
 
+def test_presign_upload_encodes_colons_in_url(session, artifacts_url):
+    """Presigned URL path must use %3A for ':' — GCS normalises ':' to '%3A'
+    when computing StringToSign, so a literal ':' causes SignatureDoesNotMatch."""
+    resp = session.get(f'{artifacts_url}/presign-upload/{STAGING_BUILD}/colon-check.txt')
+    assert resp.status_code == 200
+    url = resp.text.strip()
+    path = urlparse(url).path
+    assert '%3A' in path, f"Expected '%3A' in presigned URL path, got: {path!r}"
+    assert ':' not in path, f"Raw ':' in presigned URL path causes SignatureDoesNotMatch on GCS"
+
+
 def test_presign_upload_rejects_non_get(session, artifacts_url):
     """Only GET is allowed on /presign-upload/; other methods return 400."""
     url = f'{artifacts_url}/presign-upload/{STAGING_BUILD}/file.txt'
@@ -94,10 +106,6 @@ def test_presign_upload_part_returns_url(session, artifacts_url):
 
 def test_presign_upload_part_encodes_special_chars_in_upload_id(session, artifacts_url):
     """uploadId containing +, / and = (GCS-style base64) is percent-encoded in the presigned URL."""
-    # Use a synthetic uploadId with base64 special characters. The PRESIGN_PART
-    # endpoint does not validate that the uploadId corresponds to a real upload,
-    # so we can inject one directly to verify the encoding behaviour without
-    # needing a backend that generates such IDs.
     special_upload_id = 'abc+def/ghi=jkl'
     resp = session.get(
         f'{artifacts_url}/presign-upload-part/{STAGING_BUILD}/presign/encoding-test.bin',
@@ -105,11 +113,30 @@ def test_presign_upload_part_encodes_special_chars_in_upload_id(session, artifac
     )
     assert resp.status_code == 200, f'{resp.status_code} {resp.text}'
     url = resp.text.strip()
-    # The uploadId must appear percent-encoded in the presigned URL so that GCS
-    # can reconstruct the canonical resource from the URL literally (GCS V2 spec).
     assert 'uploadId=abc%2Bdef%2Fghi%3Djkl' in url, (
         f'Expected uploadId to be percent-encoded in presigned URL, got: {url!r}'
     )
+
+
+def test_presign_upload_part_encodes_colons_in_url(session, artifacts_url):
+    """Presigned part URL path must use %3A for ':' — GCS normalises ':' to '%3A'
+    when computing StringToSign, so a literal ':' causes SignatureDoesNotMatch."""
+    upload_id = multipart_initiate(session, artifacts_url, STAGING_BUILD, 'presign/colon-part.bin')
+    try:
+        resp = session.get(
+            f'{artifacts_url}/presign-upload-part/{STAGING_BUILD}/presign/colon-part.bin',
+            params={'partNumber': 1, 'uploadId': upload_id},
+        )
+        assert resp.status_code == 200, f'{resp.status_code} {resp.text}'
+        url = resp.text.strip()
+        path = urlparse(url).path
+        assert '%3A' in path, f"Expected '%3A' in presigned part URL path, got: {path!r}"
+        assert ':' not in path, f"Raw ':' in presigned part URL path causes SignatureDoesNotMatch on GCS"
+    finally:
+        session.delete(
+            f'{artifacts_url}/upload-multipart/abort/{STAGING_BUILD}/presign/colon-part.bin',
+            params={'uploadId': upload_id},
+        )
 
 
 def test_presign_multipart_full_round_trip(session, artifacts_url):
