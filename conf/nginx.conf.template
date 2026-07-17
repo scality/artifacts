@@ -20,6 +20,9 @@ env BOT_TOKEN;
 # Google Cloud Storage S3 compatible bucket prefix.
 env AWS_BUCKET_PREFIX;
 
+# S3-compatible endpoint URL, used to detect backend-specific signature quirks.
+env ENDPOINT_URL;
+
 # It is recommended to set one worker process per CPU core.
 pid /run/nginx.pid;
 

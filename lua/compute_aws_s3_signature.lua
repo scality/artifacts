@@ -376,20 +376,23 @@ elseif signature_mode == "PRESIGN_PART" then
   end
   local expires     = ngx.time() + 3600
   local aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-  -- GCS normalises ':' to '%3A' when computing StringToSign for presigned URLs;
-  -- encode it here so the signature matches what GCS will verify.
-  local url_safe_key = ngx.var.encoded_key:gsub(':', '%%3A')
   -- Normalise uploadId: ngx.var.arg_* may be pre-encoded or raw depending on the nginx
   -- version; unescape then re-escape to avoid double-encoding (%2B → %252B).
   local escaped_upload_id = ngx.escape_uri(ngx.unescape_uri(upload_id))
-  -- GCS does NOT include ?partNumber=N&uploadId=X in the canonical resource for presigned
-  -- part PUTs. Standard AWS S3-compatible backends (cloudserver, Scaleway S3) do include
-  -- them per the V2 spec. Detect GCS from ENDPOINT_URL to pick the right behaviour.
+  -- GCS has two quirks vs standard S3 V2 for presigned part PUTs:
+  --   1. It normalises ':' to '%3A' in the key when verifying StringToSign.
+  --   2. It excludes ?partNumber=N&uploadId=X from the canonical resource.
+  -- Standard S3-compatible backends (cloudserver, Scaleway) use literal ':'
+  -- and include subresources per the V2 spec.
+  -- ENDPOINT_URL must be declared with 'env ENDPOINT_URL;' in nginx.conf so
+  -- os.getenv() can read it from Lua workers.
   local endpoint_url = os.getenv('ENDPOINT_URL') or ''
-  local canonicalized_resource
+  local url_safe_key, canonicalized_resource
   if endpoint_url:find('googleapis', 1, true) then
+    url_safe_key = ngx.var.encoded_key:gsub(':', '%%3A')
     canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. url_safe_key
   else
+    url_safe_key = ngx.var.encoded_key
     canonicalized_resource = "/" .. ngx.var.aws_tgt_bucket .. "/" .. url_safe_key ..
       "?partNumber=" .. part_number .. "&uploadId=" .. escaped_upload_id
   end
