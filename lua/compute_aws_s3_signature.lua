@@ -291,16 +291,21 @@ elseif signature_mode == "MULTIPART_UPLOAD_PART" then
   if not part_number or part_number == "" or not upload_id or upload_id == "" then
     return ngx.exit(ngx.HTTP_BAD_REQUEST)
   end
-  -- GCS normalises ':' to '%3A' in canonical resources when S3 subresource params
-  -- (partNumber, uploadId) are present. Apply to both the signature and the proxy URL
-  -- ($encoded_key). Standard backends keep literal ':'.
+  -- GCS does not include partNumber/uploadId in the canonical resource and
+  -- normalises ':' to '%3A' in the key — same quirks as for presigned part PUTs.
+  -- Standard S3-compatible backends include subresources and keep literal ':'.
   if (os.getenv('ENDPOINT_URL') or ''):find('googleapis', 1, true) then
     ngx.var.encoded_key = ngx.var.encoded_key:gsub(':', '%%3A')
+    compute_S3_signature_with_resource(
+      "x-amz-date:" .. ngx.var.x_amz_date,
+      "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key
+    )
+  else
+    compute_S3_signature_with_resource(
+      "x-amz-date:" .. ngx.var.x_amz_date,
+      "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?partNumber=" .. part_number .. "&uploadId=" .. upload_id
+    )
   end
-  compute_S3_signature_with_resource(
-    "x-amz-date:" .. ngx.var.x_amz_date,
-    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?partNumber=" .. part_number .. "&uploadId=" .. upload_id
-  )
 
 elseif signature_mode == "MULTIPART_COMPLETE" then
 
@@ -315,15 +320,21 @@ elseif signature_mode == "MULTIPART_COMPLETE" then
   if not upload_id or upload_id == "" then
     return ngx.exit(ngx.HTTP_BAD_REQUEST)
   end
-  -- GCS normalises ':' to '%3A' in canonical resources when S3 subresource params
-  -- (uploadId) are present. Apply to both the signature and the proxy URL ($encoded_key).
+  -- GCS does not include uploadId in the canonical resource and normalises
+  -- ':' to '%3A' in the key. Standard S3-compatible backends include the
+  -- subresource and keep literal ':'.
   if (os.getenv('ENDPOINT_URL') or ''):find('googleapis', 1, true) then
     ngx.var.encoded_key = ngx.var.encoded_key:gsub(':', '%%3A')
+    compute_S3_signature_with_resource(
+      "x-amz-date:" .. ngx.var.x_amz_date,
+      "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key
+    )
+  else
+    compute_S3_signature_with_resource(
+      "x-amz-date:" .. ngx.var.x_amz_date,
+      "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
+    )
   end
-  compute_S3_signature_with_resource(
-    "x-amz-date:" .. ngx.var.x_amz_date,
-    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
-  )
 
 elseif signature_mode == "MULTIPART_ABORT" then
 
@@ -338,15 +349,21 @@ elseif signature_mode == "MULTIPART_ABORT" then
   if not upload_id or upload_id == "" then
     return ngx.exit(ngx.HTTP_BAD_REQUEST)
   end
-  -- GCS normalises ':' to '%3A' in canonical resources when S3 subresource params
-  -- (uploadId) are present. Apply to both the signature and the proxy URL ($encoded_key).
+  -- GCS does not include uploadId in the canonical resource and normalises
+  -- ':' to '%3A' in the key. Standard S3-compatible backends include the
+  -- subresource and keep literal ':'.
   if (os.getenv('ENDPOINT_URL') or ''):find('googleapis', 1, true) then
     ngx.var.encoded_key = ngx.var.encoded_key:gsub(':', '%%3A')
+    compute_S3_signature_with_resource(
+      "x-amz-date:" .. ngx.var.x_amz_date,
+      "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key
+    )
+  else
+    compute_S3_signature_with_resource(
+      "x-amz-date:" .. ngx.var.x_amz_date,
+      "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
+    )
   end
-  compute_S3_signature_with_resource(
-    "x-amz-date:" .. ngx.var.x_amz_date,
-    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
-  )
 
 elseif signature_mode == "PRESIGN_PUT" then
 
