@@ -167,9 +167,9 @@ local function multipart_copy(object, file_size_hint)
       "?uploadId=" .. ngx.escape_uri(upload_id),
     { method = ngx.HTTP_POST, body = complete_xml }
   )
-  if complete_res.status ~= 200 then
+  if complete_res.status ~= 200 or complete_res.body:find("<Error>", 1, true) then
     ngx.location.capture(
-      "/copy-multipart-abort/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
+      "/force_real_request/copy-multipart-abort/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
         "?uploadId=" .. ngx.escape_uri(upload_id),
       { method = ngx.HTTP_DELETE }
     )
