@@ -442,6 +442,141 @@ elseif signature_mode == "PRESIGN_PART" then
   ngx.say(presigned_url)
   return ngx.exit(ngx.HTTP_OK)
 
+elseif signature_mode == "COPY_MULTIPART_INITIATE" then
+
+  -- COPY_MULTIPART_INITIATE: POST /{tgt_bucket}/{tgt_build}/{key}?uploads
+  -- Initiates a multipart copy into the target build. Called internally by
+  -- copy_build.lua when a file exceeds the CopyObject size limit.
+  --
+  local build_tgt = ngx.var.canonical_path:match("^[^/]+/([^/]+)")
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path:match("^[^/]+/(.*)"))
+
+  if ngx.var.aws_tgt_bucket == "" then
+    if is_promoted(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-promoted"
+    elseif is_staging(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+    else
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-prolonged"
+    end
+  end
+
+  compute_S3_signature_with_resource(
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploads"
+  )
+
+elseif signature_mode == "COPY_MULTIPART_PART" then
+
+  -- COPY_MULTIPART_PART: PUT with x-amz-copy-source and x-amz-copy-source-range.
+  -- Copies one byte range from the source object into a target multipart part.
+  -- AMZ headers are sorted alphabetically: copy-source < copy-source-range < date.
+  --
+  local build_src, build_tgt, aws_src_bucket
+  build_src, build_tgt = ngx.var.canonical_path:match("^([^/]+)/([^/]+)")
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path:match("^[^/]+/(.*)"))
+
+  if is_staging(build_src) then
+    aws_src_bucket = aws_bucket_prefix .. "-staging"
+  elseif is_promoted(build_src) then
+    aws_src_bucket = aws_bucket_prefix .. "-promoted"
+  else
+    aws_src_bucket = aws_bucket_prefix .. "-prolonged"
+  end
+
+  if ngx.var.aws_tgt_bucket == "" then
+    if is_promoted(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-promoted"
+    elseif is_staging(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+    else
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-prolonged"
+    end
+  end
+
+  -- Mirror the COPY mode source-path construction (including .ARTIFACTS_BEFORE).
+  if ngx.var.encoded_key:match("^[^/]+/%.ARTIFACTS_BEFORE/[0-9]+/") and build_src == build_tgt then
+    ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/[^/]+/[^/]+/', build_src .. "/", 1)
+  else
+    ngx.var.x_amz_copy_source = "/" .. aws_src_bucket .. "/" .. ngx.var.encoded_key:gsub('^[^/]+/', build_src .. "/", 1)
+  end
+
+  local copy_source_range = ngx.unescape_uri(ngx.var.arg_copySourceRange or "")
+  if copy_source_range == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
+  ngx.var.x_amz_copy_source_range = copy_source_range
+
+  local part_number = ngx.var.arg_partNumber
+  local upload_id   = ngx.var.arg_uploadId
+  if not part_number or part_number == "" or not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
+
+  compute_S3_signature_with_resource(
+    "x-amz-copy-source:" .. ngx.var.x_amz_copy_source .. "\n" ..
+    "x-amz-copy-source-range:" .. ngx.var.x_amz_copy_source_range .. "\n" ..
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key ..
+      "?partNumber=" .. part_number .. "&uploadId=" .. upload_id
+  )
+
+elseif signature_mode == "COPY_MULTIPART_COMPLETE" then
+
+  -- COPY_MULTIPART_COMPLETE: POST /{tgt_bucket}/{tgt_key}?uploadId=X
+  -- Finalises a multipart copy by submitting the list of part ETags.
+  --
+  local build_tgt = ngx.var.canonical_path:match("^[^/]+/([^/]+)")
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path:match("^[^/]+/(.*)"))
+
+  if ngx.var.aws_tgt_bucket == "" then
+    if is_promoted(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-promoted"
+    elseif is_staging(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+    else
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-prolonged"
+    end
+  end
+
+  local upload_id = ngx.var.arg_uploadId
+  if not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
+
+  compute_S3_signature_with_resource(
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
+  )
+
+elseif signature_mode == "COPY_MULTIPART_ABORT" then
+
+  -- COPY_MULTIPART_ABORT: DELETE /{tgt_bucket}/{tgt_key}?uploadId=X
+  -- Cancels an in-progress multipart copy and frees stored parts.
+  --
+  local build_tgt = ngx.var.canonical_path:match("^[^/]+/([^/]+)")
+  ngx.var.encoded_key = get_encoded_key(ngx.var.canonical_path:match("^[^/]+/(.*)"))
+
+  if ngx.var.aws_tgt_bucket == "" then
+    if is_promoted(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-promoted"
+    elseif is_staging(build_tgt) then
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-staging"
+    else
+      ngx.var.aws_tgt_bucket = aws_bucket_prefix .. "-prolonged"
+    end
+  end
+
+  local upload_id = ngx.var.arg_uploadId
+  if not upload_id or upload_id == "" then
+    return ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
+
+  compute_S3_signature_with_resource(
+    "x-amz-date:" .. ngx.var.x_amz_date,
+    "/" .. ngx.var.aws_tgt_bucket .. "/" .. ngx.var.encoded_key .. "?uploadId=" .. upload_id
+  )
+
 else
 
   --
