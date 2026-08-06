@@ -99,6 +99,28 @@ def test_copy_promotes_staging_to_promoted_bucket(
     assert session.get(f'{artifacts_url}/download/{PROMOTED_BUILD}/.original_build').status_code == 200
 
 
+def test_copy_via_multipart_copy(
+    session, artifacts_url, upload_file, finish_build
+):
+    """Copy succeeds via the multipart copy path (UploadPartCopy).
+
+    COPY_OBJECT_SIZE_LIMIT=0 in tests/.env forces all non-empty files through
+    the multipart copy endpoint, exercising the full initiate/part/complete
+    cycle without needing actual >5 GB files.
+    """
+    content = b'content for multipart copy test'
+    upload_file(STAGING_BUILD, 'file.bin', content)
+    finish_build(STAGING_BUILD)
+
+    resp = session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{PROMOTED_BUILD}/')
+    assert resp.status_code == 200
+    assert resp.content.splitlines()[-1] == b'BUILD COPIED'
+
+    dl = session.get(f'{artifacts_url}/download/{PROMOTED_BUILD}/file.bin')
+    assert dl.status_code == 200
+    assert dl.content == content
+
+
 def test_copy_behind_ingress(session, artifacts_url, upload_file, finish_build):
     """Copy works correctly when a Script-Name ingress header is present."""
     upload_file(STAGING_BUILD, '.final_status', b'SUCCESSFUL',)

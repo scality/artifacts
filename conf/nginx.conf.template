@@ -23,6 +23,11 @@ env AWS_BUCKET_PREFIX;
 # S3-compatible endpoint URL, used to detect backend-specific signature quirks.
 env ENDPOINT_URL;
 
+# When set, copy_build.lua uses multipart copy for objects whose size (bytes)
+# exceeds this threshold instead of the default CopyObject approach.  Set to 0
+# in tests/.env to force the multipart path for all files.
+env COPY_OBJECT_SIZE_LIMIT;
+
 # It is recommended to set one worker process per CPU core.
 pid /run/nginx.pid;
 
@@ -686,6 +691,151 @@ http {
       # Process build copy.
       #
       content_by_lua_file /etc/nginx/copy_build.ljbc;
+    }
+
+    # Copy-multipart: initiate a multipart copy into the destination build.
+    # POST /copy-multipart-initiate/<src_build>/<tgt_build>/<object_path>
+    # Internal only (127.0.0.1). Called by copy_build.lua for files that exceed
+    # the CopyObject size limit.
+    #
+    location ~ ^/copy-multipart-initiate/[^/]+/[^/]+/.*[^/]$ {
+      if ($request_method != POST) {
+        return 400;
+      }
+
+      if ($remote_addr != 127.0.0.1) {
+        return 400;
+      }
+
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      set $signature_mode "COPY_MULTIPART_INITIATE";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $aws_tgt_bucket "";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection    "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploads;
+    }
+
+    # Copy-multipart: copy one byte range from the source object as a part.
+    # PUT /copy-multipart-part/<src_build>/<tgt_build>/<object_path>?partNumber=N&uploadId=X&copySourceRange=bytes%3Dstart-end
+    # Internal only (127.0.0.1).
+    #
+    location ~ ^/copy-multipart-part/[^/]+/[^/]+/.*[^/]$ {
+      if ($request_method != PUT) {
+        return 400;
+      }
+
+      if ($remote_addr != 127.0.0.1) {
+        return 400;
+      }
+
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      set $signature_mode          "COPY_MULTIPART_PART";
+      set $aws_access_key          "";
+      set $aws_signature           "";
+      set $x_amz_date              "";
+      set $x_amz_copy_source       "";
+      set $x_amz_copy_source_range "";
+      set $aws_tgt_bucket          "";
+      set $encoded_key             "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization           "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date              $x_amz_date;
+      proxy_set_header x-amz-copy-source       $x_amz_copy_source;
+      proxy_set_header x-amz-copy-source-range $x_amz_copy_source_range;
+      proxy_set_header Host                    $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection              "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?partNumber=$arg_partNumber&uploadId=$arg_uploadId;
+    }
+
+    # Copy-multipart: complete the multipart copy with the list of part ETags.
+    # POST /copy-multipart-complete/<src_build>/<tgt_build>/<object_path>?uploadId=X
+    # Internal only (127.0.0.1).
+    #
+    location ~ ^/copy-multipart-complete/[^/]+/[^/]+/.*[^/]$ {
+      if ($request_method != POST) {
+        return 400;
+      }
+
+      if ($remote_addr != 127.0.0.1) {
+        return 400;
+      }
+
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      set $signature_mode "COPY_MULTIPART_COMPLETE";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $aws_tgt_bucket "";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection    "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploadId=$arg_uploadId;
+    }
+
+    # Copy-multipart: abort an in-progress multipart copy.
+    # DELETE /copy-multipart-abort/<src_build>/<tgt_build>/<object_path>?uploadId=X
+    # Internal only (127.0.0.1).
+    #
+    location ~ ^/copy-multipart-abort/[^/]+/[^/]+/.*[^/]$ {
+      if ($request_method != DELETE) {
+        return 400;
+      }
+
+      if ($remote_addr != 127.0.0.1) {
+        return 400;
+      }
+
+      set_by_lua_file $canonical_path /etc/nginx/canonicalize_path.ljbc;
+
+      if ($canonical_path !~ '^[__SUPPORTED_CHARSET__]+$') {
+        return 400;
+      }
+
+      set $signature_mode "COPY_MULTIPART_ABORT";
+      set $aws_access_key "";
+      set $aws_signature  "";
+      set $x_amz_date     "";
+      set $aws_tgt_bucket "";
+      set $encoded_key    "";
+      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+
+      proxy_set_header Authorization "AWS $aws_access_key:$aws_signature";
+      proxy_set_header x-amz-date    $x_amz_date;
+      proxy_set_header Host          $aws_tgt_bucket.__S3_ENDPOINT_HOST__;
+      proxy_set_header Connection    "keep-alive";
+
+      proxy_pass __S3_ENDPOINT_PROTO__$aws_tgt_bucket/$encoded_key?uploadId=$arg_uploadId;
     }
 
     # Version an object with the following syntax:
