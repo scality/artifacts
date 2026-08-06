@@ -214,7 +214,7 @@ if copy_size_limit then
       if file_size > copy_size_limit then
         local ok, err = multipart_copy(object, file_size)
         if ok then
-          ngx.say('DONE')
+          ngx.say('DONE (multipart copy)')
         else
           ngx.say('FAILED: ' .. (err or 'unknown'))
           ngx.flush(true)
