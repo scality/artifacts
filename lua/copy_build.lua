@@ -240,7 +240,8 @@ if copy_size_limit then
 
 else
 
-  -- Production mode: CopyObject batch, fall back to multipart on EntityTooLarge.
+  -- Production mode: CopyObject batch, fall back to multipart on EntityTooLarge
+  -- (AWS S3) or "copy source is larger" InvalidRequest (Scaleway).
   for batch_start = 1, total_number_of_objects, batch_size do
     local batch_end = math.min(batch_start + batch_size - 1, total_number_of_objects)
     local urls = {}
@@ -261,7 +262,7 @@ else
         ngx.say('DONE')
       elseif object_res.status == 400 and (
         object_res.body:find("EntityTooLarge", 1, true) or
-        object_res.body:find("InvalidRequest", 1, true)
+        object_res.body:find("copy source is larger", 1, true)
       ) then
         ngx.say("large file, switching to multipart copy")
         ngx.flush(true)
