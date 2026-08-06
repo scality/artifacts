@@ -99,7 +99,7 @@ local function multipart_copy(object, file_size_hint)
 
   -- Initiate multipart upload on the target.
   local initiate_res = ngx.location.capture(
-    "/copy-multipart-initiate/" .. build_src .. "/" .. build_tgt .. "/" .. object,
+    "/force_real_request/copy-multipart-initiate/" .. build_src .. "/" .. build_tgt .. "/" .. object,
     { method = ngx.HTTP_POST, body = "" }
   )
   if initiate_res.status ~= 200 then
@@ -120,7 +120,7 @@ local function multipart_copy(object, file_size_hint)
       local byte_start = (part_num - 1) * part_size
       local byte_end   = math.min(byte_start + part_size - 1, file_size - 1)
       table.insert(part_reqs, {
-        "/copy-multipart-part/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
+        "/force_real_request/copy-multipart-part/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
           "?partNumber=" .. part_num ..
           "&uploadId=" .. ngx.escape_uri(upload_id) ..
           "&copySourceRange=" .. ngx.escape_uri("bytes=" .. byte_start .. "-" .. byte_end),
@@ -133,7 +133,7 @@ local function multipart_copy(object, file_size_hint)
       local part_num = batch_start + i - 1
       if part_res.status ~= 200 then
         ngx.location.capture(
-          "/copy-multipart-abort/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
+          "/force_real_request/copy-multipart-abort/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
             "?uploadId=" .. ngx.escape_uri(upload_id),
           { method = ngx.HTTP_DELETE }
         )
@@ -142,7 +142,7 @@ local function multipart_copy(object, file_size_hint)
       local etag = part_res.body:match("<ETag>([^<]+)</ETag>")
       if not etag then
         ngx.location.capture(
-          "/copy-multipart-abort/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
+          "/force_real_request/copy-multipart-abort/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
             "?uploadId=" .. ngx.escape_uri(upload_id),
           { method = ngx.HTTP_DELETE }
         )
@@ -163,7 +163,7 @@ local function multipart_copy(object, file_size_hint)
   local complete_xml = "<CompleteMultipartUpload>" .. table.concat(xml_parts) .. "</CompleteMultipartUpload>"
 
   local complete_res = ngx.location.capture(
-    "/copy-multipart-complete/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
+    "/force_real_request/copy-multipart-complete/" .. build_src .. "/" .. build_tgt .. "/" .. object ..
       "?uploadId=" .. ngx.escape_uri(upload_id),
     { method = ngx.HTTP_POST, body = complete_xml }
   )
