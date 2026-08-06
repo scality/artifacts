@@ -187,7 +187,8 @@ local current_object = 0
 -- larger than the threshold directly to multipart copy.  Used in tests to
 -- exercise the multipart code path without needing actual >5 GB files.
 -- In production the variable is unset: attempt CopyObject first and only fall
--- back to multipart when the backend returns EntityTooLarge.
+-- back to multipart when the backend returns EntityTooLarge or InvalidRequest
+-- (Scaleway uses InvalidRequest for files larger than 5 GB).
 --
 local copy_size_limit = tonumber(os.getenv("COPY_OBJECT_SIZE_LIMIT"))
 
@@ -258,7 +259,10 @@ else
       ngx.say("[" .. current_object .. "/" .. total_number_of_objects .. "] " .. object .. " ... ")
       if object_res.status == 200 then
         ngx.say('DONE')
-      elseif object_res.status == 400 and object_res.body:find("EntityTooLarge", 1, true) then
+      elseif object_res.status == 400 and (
+        object_res.body:find("EntityTooLarge", 1, true) or
+        object_res.body:find("InvalidRequest", 1, true)
+      ) then
         ngx.say("large file, switching to multipart copy")
         ngx.flush(true)
         local ok, err = multipart_copy(object)
