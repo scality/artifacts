@@ -14,19 +14,35 @@ if res.status ~= 200 then
   return
 end
 
--- Check that build_tgt is empty
+-- Check that build_tgt is empty, or allow resuming a partial promote.
+-- A partial target (files present but no .final_status) is resumed by skipping
+-- already-copied objects.  A fully promoted target (.final_status present) is
+-- rejected immediately.
 --
 ngx.say("Checking if the target reference '" .. build_tgt .. "' is empty")
 ngx.flush(true)
+local target_files = {}
 url = "/force_real_request/download/" .. build_tgt .. "/?format=txt"
 res = ngx.location.capture(url)
 if res.body == "" and res.truncated == false then
   ngx.say('DONE')
   ngx.flush(true)
 else
-  ngx.say('FAILED')
+  local fs_res = ngx.location.capture(
+    "/force_real_request/download/" .. build_tgt .. "/.final_status"
+  )
+  if fs_res.status == 200 then
+    ngx.say('FAILED: target already fully promoted')
+    ngx.flush(true)
+    return
+  end
+  local already_copied = 0
+  for file in res.body:gmatch("([^\r\n]+)[\r\n]+") do
+    target_files[file] = true
+    already_copied = already_copied + 1
+  end
+  ngx.say('Target not empty (' .. already_copied .. ' file(s)), resuming partial promote')
   ngx.flush(true)
-  return
 end
 
 -- Add a reference to the original build, if needed.
@@ -177,6 +193,19 @@ local function multipart_copy(object, file_size_hint)
   end
 
   return true
+end
+
+-- When resuming a partial promote, skip objects already present in the target.
+if next(target_files) ~= nil then
+  local remaining = {}
+  for _, obj in ipairs(objects) do
+    if not target_files[obj] then
+      table.insert(remaining, obj)
+    end
+  end
+  ngx.say(#objects - #remaining .. ' file(s) already in target, copying ' .. #remaining .. ' remaining')
+  ngx.flush(true)
+  objects = remaining
 end
 
 local total_number_of_objects = #objects
