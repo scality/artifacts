@@ -63,9 +63,11 @@ image:
   ##
   repository: scality/artifacts
 
+   ## tag specifies the version to deploy.
+
   ## tag specifies the version to deploy.
   ##
-  tag: 4.2.13
+  tag: 4.4.3
 
   ## pullPolicy specifies the image pull policy
   ##
