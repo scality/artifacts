@@ -209,6 +209,18 @@ if next(target_files) ~= nil then
   objects = remaining
 end
 
+-- Remove .final_status from the main copy list so it can be written last.
+-- Its presence on the target is the completion seal: if a promote is interrupted
+-- after some files are copied but before this final write, the target will not
+-- have .final_status and can be safely resumed.
+local main_objects = {}
+for _, obj in ipairs(objects) do
+  if obj ~= '.final_status' then
+    table.insert(main_objects, obj)
+  end
+end
+objects = main_objects
+
 local total_number_of_objects = #objects
 local batch_size = 16
 local current_object = 0
@@ -313,6 +325,19 @@ else
     ngx.flush(true)
   end
 
+end
+
+-- Copy .final_status last as the completion seal.
+ngx.say("Copying .final_status as completion seal")
+ngx.flush(true)
+local fs_copy_res = ngx.location.capture(
+  "/force_real_request/copy/" .. build_src .. "/" .. build_tgt .. "/.final_status",
+  { method = ngx.HTTP_PUT, body = "" }
+)
+if fs_copy_res.status ~= 200 then
+  ngx.say('FAILED: could not copy .final_status')
+  ngx.flush(true)
+  return
 end
 
 ngx.say("BUILD COPIED")

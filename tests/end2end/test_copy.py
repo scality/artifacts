@@ -167,6 +167,31 @@ def test_resume_already_complete_promote(
     assert resp.content.splitlines()[-1] == b'BUILD COPIED'
 
 
+def test_resume_promote_interrupted_before_final_status(
+    session, artifacts_url, upload_file, finish_build
+):
+    """Promote resumes when interrupted just before .final_status was written.
+
+    .final_status is copied last and acts as the completion seal.  A target that
+    has all artifacts but no .final_status (promote crashed at the final step)
+    must be resumable rather than treated as complete.
+    """
+    n = 3
+    for i in range(n):
+        upload_file(STAGING_BUILD, f'obj-{i}', f'content-{i}'.encode())
+    finish_build(STAGING_BUILD)
+
+    # Pre-populate target with all artifacts but without .final_status.
+    for i in range(n):
+        upload_file(COPY_BUILD, f'obj-{i}', f'content-{i}'.encode())
+
+    resp = session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{COPY_BUILD}/')
+    assert resp.status_code == 200
+    assert resp.content.splitlines()[-1] == b'BUILD COPIED'
+
+    assert session.get(f'{artifacts_url}/download/{COPY_BUILD}/.final_status').status_code == 200
+
+
 def test_copy_behind_ingress(session, artifacts_url, upload_file, finish_build):
     """Copy works correctly when a Script-Name ingress header is present."""
     upload_file(STAGING_BUILD, '.final_status', b'SUCCESSFUL',)
