@@ -14,10 +14,10 @@ if res.status ~= 200 then
   return
 end
 
--- Check that build_tgt is empty, or allow resuming a partial promote.
+-- Check that build_tgt is empty, or allow resuming a partial/complete promote.
+-- A fully promoted target (.final_status present) is treated as success (idempotent).
 -- A partial target (files present but no .final_status) is resumed by skipping
--- already-copied objects.  A fully promoted target (.final_status present) is
--- rejected immediately.
+-- already-copied objects.
 --
 ngx.say("Checking if the target reference '" .. build_tgt .. "' is empty")
 ngx.flush(true)
@@ -32,7 +32,8 @@ else
     "/force_real_request/download/" .. build_tgt .. "/.final_status"
   )
   if fs_res.status == 200 then
-    ngx.say('FAILED: target already fully promoted')
+    ngx.say('Target already fully promoted, nothing to do')
+    ngx.say('BUILD COPIED')
     ngx.flush(true)
     return
   end
