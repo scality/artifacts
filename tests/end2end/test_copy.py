@@ -50,25 +50,19 @@ def test_copy_source_and_target_listings_are_identical(
     assert src.content == tgt.content
 
 
-def test_copy_fails_when_target_already_exists(
+def test_copy_idempotent_when_target_already_fully_promoted(
     session, artifacts_url, upload_file, finish_build
 ):
-    """A second copy to a fully-promoted target is rejected."""
+    """A second copy to a fully-promoted target succeeds (idempotent)."""
     upload_file(STAGING_BUILD, 'file.txt', b'data')
     finish_build(STAGING_BUILD)
 
     session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{COPY_BUILD}/')
 
-    # Second attempt — target is fully promoted (has .final_status)
+    # Second attempt — target is fully promoted (has .final_status): should succeed.
     resp = session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{COPY_BUILD}/')
     assert resp.status_code == 200
-    lines = resp.content.splitlines()
-    expected_check_line = (
-        b"Checking if the target reference '%b' is empty"
-        % COPY_BUILD.encode()
-    )
-    assert lines[-2] == expected_check_line
-    assert lines[-1] == b'FAILED: target already fully promoted'
+    assert resp.content.splitlines()[-1] == b'BUILD COPIED'
 
 
 def test_copy_promotes_staging_to_promoted_bucket(
@@ -155,10 +149,11 @@ def test_resume_partial_promote(
 def test_resume_already_complete_promote(
     session, artifacts_url, upload_file, finish_build
 ):
-    """Resuming a fully-promoted target is rejected with a clear error.
+    """Resuming a fully-promoted target succeeds (idempotent).
 
     A target that already has a .final_status is considered complete; a second
-    promote attempt must fail rather than silently overwriting it.
+    promote attempt must succeed so that retrying a failed workflow does not
+    block on this step.
     """
     upload_file(STAGING_BUILD, 'file.txt', b'data')
     finish_build(STAGING_BUILD)
@@ -166,10 +161,35 @@ def test_resume_already_complete_promote(
     # First promote — completes successfully.
     session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{COPY_BUILD}/')
 
-    # Second attempt — target is fully promoted.
+    # Second attempt — target is fully promoted: should succeed (idempotent).
     resp = session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{COPY_BUILD}/')
     assert resp.status_code == 200
-    assert resp.content.splitlines()[-1] == b'FAILED: target already fully promoted'
+    assert resp.content.splitlines()[-1] == b'BUILD COPIED'
+
+
+def test_resume_promote_interrupted_before_final_status(
+    session, artifacts_url, upload_file, finish_build
+):
+    """Promote resumes when interrupted just before .final_status was written.
+
+    .final_status is copied last and acts as the completion seal.  A target that
+    has all artifacts but no .final_status (promote crashed at the final step)
+    must be resumable rather than treated as complete.
+    """
+    n = 3
+    for i in range(n):
+        upload_file(STAGING_BUILD, f'obj-{i}', f'content-{i}'.encode())
+    finish_build(STAGING_BUILD)
+
+    # Pre-populate target with all artifacts but without .final_status.
+    for i in range(n):
+        upload_file(COPY_BUILD, f'obj-{i}', f'content-{i}'.encode())
+
+    resp = session.get(f'{artifacts_url}/copy/{STAGING_BUILD}/{COPY_BUILD}/')
+    assert resp.status_code == 200
+    assert resp.content.splitlines()[-1] == b'BUILD COPIED'
+
+    assert session.get(f'{artifacts_url}/download/{COPY_BUILD}/.final_status').status_code == 200
 
 
 def test_copy_behind_ingress(session, artifacts_url, upload_file, finish_build):
