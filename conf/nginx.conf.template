@@ -222,7 +222,10 @@ http {
         return 400;
       }
 
-      rewrite_by_lua_file /etc/nginx/find_build.ljbc;
+      # content phase, not rewrite: this handler ends the request itself, and
+      # github_access.lua (access phase) must run before it.
+      #
+      content_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
     # Handle "last_success" feature.
@@ -235,7 +238,10 @@ http {
         return 400;
       }
 
-      rewrite_by_lua_file /etc/nginx/find_build.ljbc;
+      # content phase, not rewrite: this handler ends the request itself, and
+      # github_access.lua (access phase) must run before it.
+      #
+      content_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
     # Handle "last_failure" feature.
@@ -248,15 +254,36 @@ http {
         return 400;
       }
 
-      rewrite_by_lua_file /etc/nginx/find_build.ljbc;
+      # content phase, not rewrite: this handler ends the request itself, and
+      # github_access.lua (access phase) must run before it.
+      #
+      content_by_lua_file /etc/nginx/find_build.ljbc;
     }
 
     # Handle browsing per project.
     #
-    location ~ ^/github/scality/([^/]+)/(builds|download)/(.*)$ {
-      proxy_pass http://127.0.0.1/download/$3$is_args$args;
+    # The inner request comes from 127.0.0.1 and skips github_access.lua, so
+    # it must stay a read under /download/: rewrite + proxy_pass without URI
+    # makes nginx re-escape the path ('%' -> '%25'), which keeps a
+    # double-encoded '..' (%252e) from being normalized into another location.
+    #
+    # The repo segment is limited to GitHub repo name characters: it ends up
+    # in the Script-Name header, where a decoded CR/LF would inject headers.
+    # The rewrite below must match every URI this location does, otherwise
+    # the unchanged URI is proxied back here in a loop.
+    #
+    location ~ ^/github/scality/([-A-Za-z0-9_.]+)/(builds|download)/(.*)$ {
+      # Before any other regex: each match overwrites $1.
+      set $github_repo $1;
+
+      if ($request_method !~ ^(GET|HEAD)$) {
+        return 400;
+      }
+
+      rewrite ^/github/scality/[^/]+/[^/]+/(.*)$ /download/$1 break;
+      proxy_pass http://127.0.0.1;
       proxy_set_header Host $host;
-      proxy_set_header Script-Name /github/scality/$1/;
+      proxy_set_header Script-Name /github/scality/$github_repo/;
     }
 
     # Redirect a url listing a container not ended by a slash to the same url
@@ -486,7 +513,10 @@ http {
       set $aws_tgt_bucket       "";
       set $encoded_key          "";
       set $presign_query_string "";
-      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+      # content phase, not rewrite: this handler ends the request itself, and
+      # github_access.lua (access phase) must run before it.
+      #
+      content_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
     }
 
     # This will be called to send a generic 404 body instead of the XML body
@@ -945,7 +975,10 @@ http {
       set $aws_tgt_bucket    "";
       set $encoded_key       "";
       set $presign_query_string "";
-      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+      # content phase, not rewrite: this handler ends the request itself, and
+      # github_access.lua (access phase) must run before it.
+      #
+      content_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
     }
 
     # Return a presigned S3 PUT URL for one multipart part.
@@ -973,7 +1006,10 @@ http {
       set $aws_tgt_bucket    "";
       set $encoded_key       "";
       set $presign_query_string "";
-      rewrite_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
+      # content phase, not rewrite: this handler ends the request itself, and
+      # github_access.lua (access phase) must run before it.
+      #
+      content_by_lua_file /etc/nginx/compute_aws_s3_signature.ljbc;
     }
 
     # Multipart upload: initiate.
