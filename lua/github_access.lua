@@ -232,8 +232,10 @@ function restriction_check(auth)
     local username = auth:sub(0, divider-1)
     local location = nil
 
+    -- Match on the decoded, normalized URI nginx routes on: the raw
+    -- request_uri can be percent-encoded (/%75pload/) to dodge the check.
     for _,v in pairs(github_restriction_paths) do
-        if string.sub(ngx.var.request_uri, 1,string.len(v)) == v then
+        if string.sub(ngx.var.uri, 1,string.len(v)) == v then
             location = v
             break
         end
